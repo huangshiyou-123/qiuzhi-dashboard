@@ -194,6 +194,15 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
       <p style="font-size:12px;color:var(--muted)">Key 仅存储在浏览器本地，不上传任何服务器。</p>
     </div>
     <div class="settings-section">
+      <label>🔮 截图识别模型（可选）</label>
+      <select id="visionModelSelect" style="margin-bottom:4px">
+        <option value="">不使用截图识别</option>
+        <option value="qwen">通义千问 Qwen-VL-Max（推荐，中文OCR准确）</option>
+      </select>
+      <input type="password" id="qwenApiKeyInput" placeholder="千问 API Key (sk-...)" style="margin-top:8px">
+      <p style="font-size:12px;color:var(--muted)">使用通义千问多模态模型识别JD截图，比本地OCR更准确。不配置则继续用浏览器本地OCR。</p>
+    </div>
+    <div class="settings-section">
       <h4>📄 我的通用简历</h4>
       <textarea id="resumeTemplate" placeholder="粘贴你的通用简历文本，后续话术生成和简历优化会自动使用..." style="min-height:200px"></textarea>
       <p style="font-size:12px;color:var(--muted)">保存后，每次生成话术和优化简历时自动填充。</p>
@@ -245,6 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadSettings() {
   db.settings.get('apiKey').then(s => { if (s) { document.getElementById('apiKeyInput').value = s.value; updateApiStatus(true); } });
   db.settings.get('resume').then(s => { if (s) document.getElementById('resumeTemplate').value = s.value; });
+  db.settings.get('qwenApiKey').then(s => { if (s) document.getElementById('qwenApiKeyInput').value = s.value; });
+  db.settings.get('visionModel').then(s => { if (s) document.getElementById('visionModelSelect').value = s.value; });
 }
 
 function updateApiStatus(has) {
@@ -509,26 +520,37 @@ async function parseJDFromImage() {
   const resultBox = document.getElementById('jdResult');
   resultBox.style.display = 'block';
   resultBox.className = 'result-box loading';
-  resultBox.textContent = '🔍 正在识别截图中的文字...（Tesseract OCR 本地识别，不上传图片）';
-  try {
-    // Step 1: OCR with Tesseract.js (runs locally in browser)
-    const ocrResult = await Tesseract.recognize(window._jdImageDataUrl, 'chi_sim+eng', {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          resultBox.textContent = `🔍 正在识别文字... ${Math.round(m.progress * 100)}%`;
-        }
-      }
-    });
-    const ocrText = ocrResult.data.text.trim();
-    if (!ocrText || ocrText.length < 10) {
-      resultBox.className = 'result-box';
-      resultBox.textContent = '⚠️ 未能从截图中识别到足够文字。请确认截图清晰、包含文字内容，或改用下方"粘贴JD文本"方式。';
-      return;
+
+  // 检查是否配置了千问视觉模型
+  const visionModelSetting = await db.settings.get('visionModel');
+  const qwenKeySetting = await db.settings.get('qwenApiKey');
+
+  let ocrText = '';
+  if (visionModelSetting && visionModelSetting.value === 'qwen' && qwenKeySetting && qwenKeySetting.value) {
+    // 使用通义千问 Qwen-VL
+    resultBox.textContent = '🔮 千问视觉识别中...';
+    try {
+      ocrText = await callQwenVL(qwenKeySetting.value, window._jdImageDataUrl);
+      ocrText = ocrText.trim();
+    } catch(e) {
+      resultBox.textContent = '⚠️ 千问识别失败：' + e.message + '，切换到本地OCR...';
+      ocrText = await runTesseractOCR(resultBox);
     }
-    // Step 2: Parse structured info with DeepSeek
-    resultBox.textContent = '📝 文字识别完成，正在结构化解析...';
-    const output = await callDeepSeek(
-      `你是一个专业的JD解析助手。以下是从招聘JD截图中识别出的文字（可能有OCR识别误差），请提取结构化信息。严格按Markdown格式输出：
+  } else {
+    // 使用本地 Tesseract OCR
+    ocrText = await runTesseractOCR(resultBox);
+  }
+
+  if (!ocrText || ocrText.length < 10) {
+    resultBox.className = 'result-box';
+    resultBox.textContent = '⚠️ 未能从截图中识别到足够文字。请确认截图清晰、包含文字内容，或改用下方"粘贴JD文本"方式。';
+    return;
+  }
+
+  // Step 2: Parse structured info with DeepSeek
+  resultBox.textContent = '📝 文字识别完成，正在结构化解析...';
+  const output = await callDeepSeek(
+    `你是一个专业的JD解析助手。以下是从招聘JD截图中识别出的文字（可能有OCR识别误差），请提取结构化信息。严格按Markdown格式输出：
 
 ## 公司名称
 ## 岗位名称
@@ -540,24 +562,58 @@ async function parseJDFromImage() {
 ## 一句话岗位总结
 
 规则：不编造JD中没有的信息。中文输出。`,
-      '以下是从招聘JD截图中OCR识别出的文字内容：\n\n' + ocrText
-    );
-    resultBox.className = 'result-box';
-    resultBox.innerHTML = `
-      <h4 style="margin-top:0">✅ 截图识别 & 解析结果</h4>
-      <details style="margin-bottom:12px;font-size:12px;color:var(--muted)">
-        <summary>📝 OCR原始识别文字（点击展开）</summary>
-        <pre style="white-space:pre-wrap;background:#f9fafb;padding:8px;border-radius:4px;margin-top:4px">${ocrText}</pre>
-      </details>
-      ${markdownToHtml(output)}
-    `;
-    window._lastParsedJD = { raw: ocrText, parsed: output };
-    fillSaveForm(output, ocrText);
-    showToast('截图识别完成！已自动填充保存表单', 'success');
-  } catch(e) {
-    resultBox.className = 'result-box';
-    resultBox.textContent = '识别失败：' + e.message;
+    '以下是从招聘JD截图中识别出的文字内容：\n\n' + ocrText
+  );
+  resultBox.className = 'result-box';
+  resultBox.innerHTML = `
+    <h4 style="margin-top:0">✅ 截图识别 & 解析结果</h4>
+    <details style="margin-bottom:12px;font-size:12px;color:var(--muted)">
+      <summary>📝 原始识别文字（点击展开）</summary>
+      <pre style="white-space:pre-wrap;background:#f9fafb;padding:8px;border-radius:4px;margin-top:4px">${ocrText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+    </details>
+    ${markdownToHtml(output)}
+  `;
+  window._lastParsedJD = { raw: ocrText, parsed: output };
+  fillSaveForm(output, ocrText);
+  showToast('截图识别完成！已自动填充保存表单', 'success');
+}
+
+// Qwen-VL 视觉识别
+async function callQwenVL(apiKey, imageDataUrl) {
+  const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({
+      model: 'qwen-vl-max',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: '请准确识别这张招聘JD截图中的所有文字内容。只输出识别出的完整原文，不要添加任何解释、总结或格式化。' },
+          { type: 'image_url', image_url: { url: imageDataUrl } }
+        ]
+      }],
+      max_tokens: 4096
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || err.message || 'HTTP ' + resp.status);
   }
+  const data = await resp.json();
+  return data.choices[0].message.content;
+}
+
+// Tesseract.js 本地OCR（fallback）
+async function runTesseractOCR(resultBox) {
+  resultBox.textContent = '🔍 Tesseract 本地OCR识别中...（未配置千问Key，使用浏览器本地识别）';
+  const ocrResult = await Tesseract.recognize(window._jdImageDataUrl, 'chi_sim+eng', {
+    logger: m => {
+      if (m.status === 'recognizing text') {
+        resultBox.textContent = `🔍 本地OCR识别中... ${Math.round(m.progress * 100)}%`;
+      }
+    }
+  });
+  return ocrResult.data.text.trim();
 }
 
 // ============ AI Calls ============
@@ -1081,8 +1137,12 @@ function closeSettings() { document.getElementById('settingsModal').classList.re
 async function saveSettings() {
   const apiKey = document.getElementById('apiKeyInput').value.trim();
   const resume = document.getElementById('resumeTemplate').value.trim();
+  const visionModel = document.getElementById('visionModelSelect').value;
+  const qwenApiKey = document.getElementById('qwenApiKeyInput').value.trim();
   if (apiKey) { await db.settings.put({ key: 'apiKey', value: apiKey }); updateApiStatus(true); }
   if (resume) await db.settings.put({ key: 'resume', value: resume });
+  if (visionModel) { await db.settings.put({ key: 'visionModel', value: visionModel }); }
+  if (qwenApiKey) { await db.settings.put({ key: 'qwenApiKey', value: qwenApiKey }); }
   showToast('✅ 设置已保存', 'success');
   closeSettings();
 }
