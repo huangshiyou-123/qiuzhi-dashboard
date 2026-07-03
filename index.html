@@ -376,7 +376,7 @@ function renderNewJob(container) {
     <div class="tab-content" id="tab-pitch">
       <div class="card">
         <h3>💬 生成打招呼话术</h3>
-        <div class="form-group"><label>选择JD（已解析的）</label><select id="pitchJdSelect"><option value="">— 请先在JD解析中保存一条 —</option></select></div>
+        <div class="form-group"><label>选择JD（已解析的）</label><div style="display:flex;gap:8px"><select id="pitchJdSelect" style="flex:1"><option value="">— 请先在JD解析中保存一条 —</option></select><button class="btn btn-danger btn-sm" onclick="deleteSelectedJD('pitch')" title="删除选中的JD">🗑️</button></div></div>
         <div class="btn-group"><button class="btn btn-primary" onclick="generatePitch()">生成话术</button></div>
         <div class="result-box" id="pitchResult" style="display:none"></div>
       </div>
@@ -384,7 +384,7 @@ function renderNewJob(container) {
     <div class="tab-content" id="tab-resume">
       <div class="card">
         <h3>📝 简历匹配分析 & 优化</h3>
-        <div class="form-group"><label>选择JD</label><select id="resumeJdSelect"><option value="">— 请先在JD解析中保存一条 —</option></select></div>
+        <div class="form-group"><label>选择JD</label><div style="display:flex;gap:8px"><select id="resumeJdSelect" style="flex:1"><option value="">— 请先在JD解析中保存一条 —</option></select><button class="btn btn-danger btn-sm" onclick="deleteSelectedJD('resume')" title="删除选中的JD">🗑️</button></div></div>
         <div class="form-group"><label>我的简历（使用API设置中保存的通用简历，可在此修改）</label><textarea id="resumeInput"></textarea></div>
         <div class="btn-group"><button class="btn btn-primary" onclick="optimizeResume()">🔬 分析 & 优化</button></div>
         <div class="result-box" id="resumeResult" style="display:none"></div>
@@ -446,6 +446,17 @@ async function refreshJdSelects() {
 function extractField(text, fieldName) {
   const m = text.match(new RegExp('##\\s*' + fieldName + '\\s*\\n(.+)'));
   return m ? m[1].trim() : null;
+}
+
+async function deleteSelectedJD(type) {
+  const selId = type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect';
+  const jdId = document.getElementById(selId).value;
+  if (!jdId || jdId === '_recent') { showToast('请选择一条已保存的JD才能删除', 'error'); return; }
+  if (!confirm('确定删除这条JD记录？删除后不可恢复。')) return;
+  await db.applications.delete(parseInt(jdId));
+  showToast('已删除', 'success');
+  refreshJdSelects();
+  updateBottomBar();
 }
 
 async function loadResumeForOptimize() {
