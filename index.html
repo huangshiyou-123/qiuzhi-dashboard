@@ -701,17 +701,6 @@ function fillSaveForm(parsedText, rawJD) {
   if (pe && position) pe.value = position;
   if (je) je.value = rawJD || '';
   if (jpe) jpe.value = parsedText || '';
-  // 自动切换到保存页让用户确认
-  const saveTab = document.querySelector('#mainContent .tab[data-tab="save"]');
-  const allTabs = document.querySelectorAll('#mainContent .tab');
-  const allContents = document.querySelectorAll('#mainContent .tab-content');
-  if (saveTab) {
-    allTabs.forEach(t => t.classList.remove('active'));
-    allContents.forEach(c => c.classList.remove('active'));
-    saveTab.classList.add('active');
-    const sc = document.getElementById('tab-save');
-    if (sc) sc.classList.add('active');
-  }
 }
 
 async function generatePitch() {
