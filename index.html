@@ -189,8 +189,8 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
     <button class="modal-close" onclick="closeSettings()">&times;</button>
     <h3>⚙️ API 设置</h3>
     <div class="settings-section">
-      <label>DeepSeek API Key</label>
-      <input type="password" id="apiKeyInput" placeholder="sk-..." style="margin-bottom:8px">
+      <label>DeepSeek API Key <span style="color:#10b981;font-size:11px">（已内置免费Key，也可填自己的）</span></label>
+      <input type="password" id="apiKeyInput" placeholder="留空则使用内置免费Key" style="margin-bottom:8px">
       <p style="font-size:12px;color:var(--muted)">Key 仅存储在浏览器本地，不上传任何服务器。</p>
     </div>
     <div class="settings-section">
@@ -258,12 +258,12 @@ function loadSettings() {
   db.settings.get('visionModel').then(s => { if (s) document.getElementById('visionModelSelect').value = s.value; });
 }
 
-function updateApiStatus(has) {
+function updateApiStatus(hasUserKey) {
   const el = document.getElementById('apiStatus');
   const dot = document.getElementById('apiDot');
   const txt = document.getElementById('apiStatusText');
-  if (has) { el.className = 'api-status'; dot.className = 'api-dot'; txt.textContent = 'API 已就绪'; }
-  else { el.className = 'api-status off'; dot.className = 'api-dot off'; txt.textContent = '未配置API Key'; }
+  if (hasUserKey) { el.className = 'api-status'; dot.className = 'api-dot'; txt.textContent = 'API 已就绪 (自配)'; }
+  else { el.className = 'api-status'; dot.className = 'api-dot'; txt.textContent = 'API 已就绪 (免费Key)'; }
 }
 
 // ============ Navigation ============
@@ -617,12 +617,17 @@ async function runTesseractOCR(resultBox) {
 }
 
 // ============ AI Calls ============
+const DEFAULT_API_KEY = 'sk-qsnkddsgneqatkphrizufgngdpavbmggxojjzaujbduttaov';
+const DEFAULT_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+const DEFAULT_MODEL = 'deepseek-ai/DeepSeek-V3';
+
 async function callDeepSeek(systemPrompt, userContent, imageDataUrl = null) {
   const apiKeySetting = await db.settings.get('apiKey');
-  if (!apiKeySetting || !apiKeySetting.value) {
-    showToast('请先在左侧底部"API设置"中配置DeepSeek API Key', 'error');
-    throw new Error('No API key');
-  }
+  const hasUserKey = apiKeySetting && apiKeySetting.value;
+  const apiKey = hasUserKey ? apiKeySetting.value : DEFAULT_API_KEY;
+  const apiUrl = hasUserKey ? 'https://api.deepseek.com/v1/chat/completions' : DEFAULT_API_URL;
+  const model = hasUserKey ? 'deepseek-chat' : DEFAULT_MODEL;
+
   let messages = [{ role: 'system', content: systemPrompt }];
   if (imageDataUrl) {
     messages.push({
@@ -635,11 +640,11 @@ async function callDeepSeek(systemPrompt, userContent, imageDataUrl = null) {
   } else {
     messages.push({ role: 'user', content: userContent });
   }
-  const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
+  const resp = await fetch(apiUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKeySetting.value },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: model,
       messages: messages,
       temperature: 0.7,
       max_tokens: 4096
