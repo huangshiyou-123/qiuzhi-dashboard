@@ -168,9 +168,9 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
   <div class="top-bar">
     <h2 id="viewTitle">仪表盘</h2>
     <div class="top-bar-right">
-      <span class="api-status off" id="apiStatus">
-        <span class="api-dot off" id="apiDot"></span>
-        <span id="apiStatusText">未配置API Key</span>
+      <span class="api-status" id="apiStatus">
+        <span class="api-dot" id="apiDot"></span>
+        <span id="apiStatusText">API 已就绪 (免费Key)</span>
       </span>
     </div>
   </div>
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function loadSettings() {
-  db.settings.get('apiKey').then(s => { if (s) { document.getElementById('apiKeyInput').value = s.value; updateApiStatus(true); } });
+  db.settings.get('apiKey').then(s => { if (s && s.value) { document.getElementById('apiKeyInput').value = s.value; updateApiStatus(true); } else { updateApiStatus(false); } });
   db.settings.get('resume').then(s => { if (s) document.getElementById('resumeTemplate').value = s.value; });
   db.settings.get('qwenApiKey').then(s => { if (s) document.getElementById('qwenApiKeyInput').value = s.value; });
   db.settings.get('visionModel').then(s => { if (s) document.getElementById('visionModelSelect').value = s.value; });
@@ -1659,9 +1659,9 @@ document.addEventListener('click', e => {
   <div class="top-bar">
     <h2 id="viewTitle">仪表盘</h2>
     <div class="top-bar-right">
-      <span class="api-status off" id="apiStatus">
-        <span class="api-dot off" id="apiDot"></span>
-        <span id="apiStatusText">未配置API Key</span>
+      <span class="api-status" id="apiStatus">
+        <span class="api-dot" id="apiDot"></span>
+        <span id="apiStatusText">API 已就绪 (免费Key)</span>
       </span>
     </div>
   </div>
@@ -1743,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function loadSettings() {
-  db.settings.get('apiKey').then(s => { if (s) { document.getElementById('apiKeyInput').value = s.value; updateApiStatus(true); } });
+  db.settings.get('apiKey').then(s => { if (s && s.value) { document.getElementById('apiKeyInput').value = s.value; updateApiStatus(true); } else { updateApiStatus(false); } });
   db.settings.get('resume').then(s => { if (s) document.getElementById('resumeTemplate').value = s.value; });
   db.settings.get('qwenApiKey').then(s => { if (s) document.getElementById('qwenApiKeyInput').value = s.value; });
   db.settings.get('visionModel').then(s => { if (s) document.getElementById('visionModelSelect').value = s.value; });
