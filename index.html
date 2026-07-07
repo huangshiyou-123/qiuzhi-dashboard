@@ -905,7 +905,8 @@ ${resume}
 - 每种话术独立成段
 - 不提学历层级，只说专业方向和能力
 - 简洁版严格控制在50字以内
-- 可根据JD中提到的具体业务或产品来定制`,
+- 可根据JD中提到的具体业务或产品来定制
+- 禁止使用**或*等星号格式标记`,
       '请生成三种话术'
     );
     var pitchHtml = renderPitchVariants(output);
@@ -931,7 +932,7 @@ function renderPitchVariants(text) {
     const content = (variants[i+1] || '').trim();
     html += `<div class="pitch-variant">
       <h4>${currentTitle} <button class="btn btn-sm btn-outline copy-btn" onclick="copyText(\`${content.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`)">📋 复制</button></h4>
-      <p>${content.replace(/\n/g, '<br>')}</p>
+      <p>${content.replace(/\*\*/g, '').replace(/\*/g, '').replace(/\n/g, '<br>')}</p>
     </div>`;
   }
   return html || '<p>' + text.replace(/\n/g, '<br>') + '</p>';
@@ -981,7 +982,7 @@ ${resume}
 （JD要求但简历缺失的，用-列表，如没有则写"无"）
 
 ### 优化后的简历文本
-（基于原简历改写，只调整与JD相关的表达和侧重点，保留原有格式结构。不改学历信息，不编造经历。）`,
+（基于原简历改写，只调整与JD相关的表达和侧重点，保留原有格式结构。不改学历信息，不编造经历。禁止使用**或*等星号格式标记。）`,
       '请分析并优化'
     );
     var resumeHtml = renderResumeResult(output);
@@ -1016,6 +1017,8 @@ function renderResumeResult(text) {
   });
   html = html.replace(/###\s*(.+)/g, '<h4>$1</h4>');
   html = html.replace(/\n- (.+)/g, '\n• $1');
+  html = html.replace(/\*\*/g, '');
+  html = html.replace(/\*/g, '');
   html = html.replace(/\n/g, '<br>');
   return html;
 }
