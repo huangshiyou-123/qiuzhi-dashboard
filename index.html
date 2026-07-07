@@ -76,10 +76,11 @@ body {
 .nav-item.active .nav-icon { opacity: 1; }
 .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,.08); }
 .sidebar-footer button {
-  width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,.15);
+  width: 100%; padding: 12px 10px; border: 1px solid rgba(255,255,255,.15);
   background: rgba(255,255,255,.04); color: var(--sidebar-text);
   border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500;
   transition: all var(--transition);
+  position: relative; z-index: 5; pointer-events: auto; min-height: 44px;
 }
 .sidebar-footer button:hover { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.25); }
 
@@ -136,9 +137,10 @@ body {
 textarea, input[type="text"], input[type="password"], select {
   width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
   border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; resize: vertical;
-  transition: all var(--transition); background: #fafbfc; color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition); background: #fafbfc; color: var(--text);
 }
-textarea:focus, input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.12); background: #fff; }
+select { transition: none; cursor: pointer; }
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.12); background: #fff; }
 textarea { min-height: 160px; line-height: 1.6; }
 label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
 .form-group { margin-bottom: 18px; }
