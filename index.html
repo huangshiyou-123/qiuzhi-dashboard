@@ -575,9 +575,10 @@ function renderNewJob(container) {
   }));
   // 恢复之前上传的截图预览
   setTimeout(() => restoreImagePreviewUI(), 50);
-  // 恢复生成结果（跨Tab导航不丢失）
+  // 恢复生成结果（跨Tab/页面导航不丢失）
   setTimeout(() => {
-    if (window._lastJDResult) { var b = document.getElementById('jdResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastJDResult; } }
+    if (window._jdOcrInProgress) { var b = document.getElementById('jdResult'); if (b) { b.style.display = 'block'; b.className = 'result-box loading'; b.textContent = '识别中...切回来自动恢复'; } }
+    else if (window._lastJDResult) { var b = document.getElementById('jdResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastJDResult; } }
     if (window._lastPitchResult) { var b = document.getElementById('pitchResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastPitchResult; } }
     if (window._lastResumeResult) { var b = document.getElementById('resumeResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastResumeResult; } }
     if (window._lastInterviewResult) { var b = document.getElementById('interviewResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastInterviewResult; } }
@@ -665,63 +666,45 @@ async function parseJDFromImage() {
   if (!window._jdImageDataUrl) { showToast('请先上传截图', 'error'); return; }
   const resultBox = document.getElementById('jdResult');
   resultBox.style.display = 'block';
+  window._jdOcrInProgress = true;
   resultBox.className = 'result-box loading';
+  resultBox.textContent = '千问视觉识别中...（切换页面不中断）';
 
-  // 检查是否配置了千问视觉模型
-  const visionModelSetting = await db.settings.get('visionModel');
+  // 使用千问视觉识别
   const qwenKeySetting = await db.settings.get('qwenApiKey');
+  const qwenKey = (qwenKeySetting && qwenKeySetting.value) ? qwenKeySetting.value : DEFAULT_QWEN_KEY;
 
   let ocrText = '';
-  if (visionModelSetting && visionModelSetting.value === 'qwen' && qwenKeySetting && qwenKeySetting.value) {
-    // 使用通义千问 Qwen-VL
-    resultBox.textContent = '🔮 千问视觉识别中...';
-    try {
-      ocrText = await callQwenVL(qwenKeySetting.value, window._jdImageDataUrl);
-      ocrText = ocrText.trim();
-    } catch(e) {
-      resultBox.textContent = '⚠️ 千问识别失败：' + e.message + '，切换到本地OCR...';
-      ocrText = await runTesseractOCR(resultBox);
-    }
-  } else {
-    // 使用本地 Tesseract OCR
+  try {
+    ocrText = await callQwenVL(qwenKey, window._jdImageDataUrl);
+    ocrText = ocrText.trim();
+  } catch(e) {
     ocrText = await runTesseractOCR(resultBox);
   }
 
+  window._lastOcrText = ocrText;
   if (!ocrText || ocrText.length < 10) {
-    resultBox.className = 'result-box';
-    resultBox.textContent = '⚠️ 未能从截图中识别到足够文字。请确认截图清晰、包含文字内容，或改用下方"粘贴JD文本"方式。';
+    resultBox = document.getElementById('jdResult');
+    if (resultBox) { resultBox.className = 'result-box'; resultBox.textContent = '未能从截图中识别到足够文字。'; }
+    window._jdOcrInProgress = false;
     return;
   }
 
-  // Step 2: Parse structured info with DeepSeek
-  resultBox.textContent = '📝 文字识别完成，正在结构化解析...';
+  // Step 2: 结构化解析
+  var rb = document.getElementById('jdResult');
+  if (rb) rb.textContent = '文字识别完成，正在结构化解析...';
   const output = await callDeepSeek(
-    `你是一个专业的JD解析助手。以下是从招聘JD截图中识别出的文字（可能有OCR识别误差），请提取结构化信息。严格按Markdown格式输出：
-
-## 公司名称
-## 岗位名称
-## 薪资范围（如未提及写"未标注"）
-## 工作地点
-## 核心技能要求（每条用-开头，每条≤15字）
-## 加分项（每条用-开头，如未提及写"无"）
-## 岗位亮点（该岗位最吸引人的1-2个点）
-## 一句话岗位总结
-
-规则：不编造JD中没有的信息。中文输出。`,
+    '你是一个专业的JD解析助手。以下是从招聘JD截图中识别出的文字（可能有OCR识别误差），请提取结构化信息。严格按Markdown格式输出：\n\n## 公司名称\n## 岗位名称\n## 薪资范围（如未提及写"未标注"）\n## 工作地点\n## 核心技能要求（每条用-开头，每条≤15字）\n## 加分项（每条用-开头，如未提及写"无"）\n## 岗位亮点（该岗位最吸引人的1-2个点）\n## 一句话岗位总结\n\n规则：不编造JD中没有的信息。中文输出。',
     '以下是从招聘JD截图中识别出的文字内容：\n\n' + ocrText
   );
-  resultBox.className = 'result-box';
-  resultBox.innerHTML = `
-    <h4 style="margin-top:0">✅ 截图识别 & 解析结果</h4>
-    <details style="margin-bottom:12px;font-size:12px;color:var(--muted)">
-      <summary>📝 原始识别文字（点击展开）</summary>
-      <pre style="white-space:pre-wrap;background:#f9fafb;padding:8px;border-radius:4px;margin-top:4px">${ocrText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
-    </details>
-    ${markdownToHtml(output)}
-  `;
   window._lastParsedJD = { raw: ocrText, parsed: output };
+  var resultHtml = '<h4 style="margin-top:0">截图识别 & 解析结果</h4><details style="margin-bottom:12px;font-size:12px;color:var(--muted)"><summary>原始识别文字（点击展开）</summary><pre style="white-space:pre-wrap;background:#f9fafb;padding:8px;border-radius:4px;margin-top:4px">' + ocrText.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre></details>' + markdownToHtml(output);
+  window._lastJDResult = resultHtml;
+  window._jdOcrInProgress = false;
+  rb = document.getElementById('jdResult');
+  if (rb) { rb.className = 'result-box'; rb.innerHTML = resultHtml; }
   fillSaveForm(output, ocrText);
-  showToast('截图识别完成！已自动填充保存表单', 'success');
+  showToast('截图识别完成', 'success');
 }
 
 // Qwen-VL 视觉识别
@@ -852,14 +835,13 @@ async function parseJD() {
 规则：不编造。信息不足时标注"未标注"或"推测"，不要无中生有。中文输出。`,
       jd
     );
-    resultBox.className = 'result-box';
-    resultBox.innerHTML = `<h4 style="margin-top:0">✅ 解析结果</h4>` + markdownToHtml(output);
-    // Store for later use
+    var resultHtml = '<h4 style="margin-top:0">解析结果</h4>' + markdownToHtml(output);
     window._lastParsedJD = { raw: jd, parsed: output };
-    window._lastJDResult = resultBox.innerHTML;
-    // Auto-fill save form
+    window._lastJDResult = resultHtml;
+    var rb = document.getElementById('jdResult');
+    if (rb) { rb.className = 'result-box'; rb.innerHTML = resultHtml; }
     fillSaveForm(output, jd);
-    showToast('JD解析完成！已自动填充保存表单', 'success');
+    showToast('JD解析完成', 'success');
   } catch(e) {
     resultBox.className = 'result-box';
     resultBox.textContent = '解析失败：' + e.message;
@@ -921,9 +903,10 @@ ${resume}
 - 可根据JD中提到的具体业务或产品来定制`,
       '请生成三种话术'
     );
-    resultBox.className = 'result-box';
-    resultBox.innerHTML = renderPitchVariants(output);
-    window._lastPitchResult = resultBox.innerHTML;
+    var pitchHtml = renderPitchVariants(output);
+    window._lastPitchResult = pitchHtml;
+    var rb = document.getElementById('pitchResult');
+    if (rb) { rb.className = 'result-box'; rb.innerHTML = pitchHtml; }
     // Auto-fill save form
     const se = document.getElementById('savePitch');
     if (se) se.value = output;
@@ -996,9 +979,10 @@ ${resume}
 （基于原简历改写，只调整与JD相关的表达和侧重点，保留原有格式结构。不改学历信息，不编造经历。）`,
       '请分析并优化'
     );
-    resultBox.className = 'result-box';
-    resultBox.innerHTML = renderResumeResult(output);
-    window._lastResumeResult = resultBox.innerHTML;
+    var resumeHtml = renderResumeResult(output);
+    window._lastResumeResult = resumeHtml;
+    var rb = document.getElementById('resumeResult');
+    if (rb) { rb.className = 'result-box'; rb.innerHTML = resumeHtml; }
     // Extract match rate
     const rateMatch = output.match(/匹配度评分\s*\n.*?(\d+)/i);
     const rate = rateMatch ? parseInt(rateMatch[1]) : null;

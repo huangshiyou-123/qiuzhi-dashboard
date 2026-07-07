@@ -35,9 +35,10 @@ async function generateInterview() {
       '你是一个资深面试教练。\n\n## 目标JD\n' + parsed + '\n\n## 候选人简历\n' + (resume || '（未提供）'),
       promptText
     );
-    box.className = 'result-box';
-    box.innerHTML = '<h4 style="margin-top:0">面试备战方案</h4>' + markdownToHtml(output);
-    window._lastInterviewResult = box.innerHTML;
+    var resultHtml = '<h4 style="margin-top:0">面试备战方案</h4>' + markdownToHtml(output);
+    window._lastInterviewResult = resultHtml;
+    var b = document.getElementById('interviewResult');
+    if (b) { b.className = 'result-box'; b.innerHTML = resultHtml; }
   } catch(e) { box.className = 'result-box'; box.textContent = '生成失败：' + e.message; }
 }
 
@@ -144,8 +145,10 @@ async function compareOfferScreenshots() {
       '## Offer A\n' + a + '\n\n## Offer B\n' + b
     );
     box.className = 'result-box';
-    box.innerHTML = '<h4 style="margin-top:0">对比分析</h4>' + markdownToHtml(output);
-    window._lastOfferResult = box.innerHTML;
+    var resultHtml = '<h4 style="margin-top:0">对比分析</h4>' + markdownToHtml(output);
+    window._lastOfferResult = resultHtml;
+    var b = document.getElementById('offerResult');
+    if (b) { b.className = 'result-box'; b.innerHTML = resultHtml; }
   } catch(e) { box.className = 'result-box'; box.textContent = '分析失败：' + e.message; }
 }
 
