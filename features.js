@@ -77,6 +77,23 @@ function renderOfferCompare(container) {
   h += '<div class="result-box" id="offerResult" style="display:none;margin-top:16px"></div>';
   h += '</div>';
   container.innerHTML = h;
+  // 恢复之前的状态
+  setTimeout(function() {
+    ['A','B'].forEach(function(s) {
+      var img = s === 'A' ? window._offerAImage : window._offerBImage;
+      if (img) {
+        var preview = document.getElementById('offer' + s + 'Preview');
+        if (preview) { preview.style.display = 'block'; preview.innerHTML = '<img src="' + img + '" style="max-width:100%;max-height:200px;border-radius:6px;border:1px solid var(--border)">'; }
+        var btn = document.getElementById('offer' + s + 'OcrBtn');
+        if (btn) btn.style.display = 'block';
+        var zone = document.getElementById('offer' + s + 'UploadZone');
+        if (zone) zone.style.display = 'none';
+      }
+      var savedText = s === 'A' ? window._offerAText : window._offerBText;
+      if (savedText) { var el = document.getElementById('offer' + s + 'Text'); if (el) el.value = savedText; }
+    });
+    if (window._lastOfferResult) { var b = document.getElementById('offerResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastOfferResult; } }
+  }, 100);
 }
 
 function offerImageSelected(event, side) {
@@ -107,6 +124,7 @@ async function ocrOffer(side) {
     var text = await callQwenVL(key, imgData);
     var txtEl = document.getElementById('offer' + side + 'Text');
     if (txtEl) txtEl.value = text;
+    if (side === 'A') window._offerAText = text; else window._offerBText = text;
     showToast('识别完成', 'success');
   } catch(e) {
     showToast('OCR失败：' + e.message, 'error');
@@ -127,6 +145,7 @@ async function compareOfferScreenshots() {
     );
     box.className = 'result-box';
     box.innerHTML = '<h4 style="margin-top:0">对比分析</h4>' + markdownToHtml(output);
+    window._lastOfferResult = box.innerHTML;
   } catch(e) { box.className = 'result-box'; box.textContent = '分析失败：' + e.message; }
 }
 
