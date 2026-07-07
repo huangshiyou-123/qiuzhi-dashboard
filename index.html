@@ -398,6 +398,8 @@ function initNav() {
 }
 
 function renderView(view) {
+  if (window._lastRenderedView === view) return; // 同一页面不重复渲染，保护进行中的操作
+  window._lastRenderedView = view;
   currentView = view;
   document.getElementById('viewTitle').textContent = VIEW_TITLES[view];
   const content = document.getElementById('mainContent');
@@ -575,14 +577,17 @@ function renderNewJob(container) {
   }));
   // 恢复之前上传的截图预览
   setTimeout(() => restoreImagePreviewUI(), 50);
-  // 恢复生成结果（跨Tab/页面导航不丢失）
-  setTimeout(() => {
+  // 恢复生成结果（持续检查，确保异步操作完成后的结果也被恢复）
+  function restoreResults() {
     if (window._jdOcrInProgress) { var b = document.getElementById('jdResult'); if (b) { b.style.display = 'block'; b.className = 'result-box loading'; b.textContent = '识别中...切回来自动恢复'; } }
     else if (window._lastJDResult) { var b = document.getElementById('jdResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastJDResult; } }
     if (window._lastPitchResult) { var b = document.getElementById('pitchResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastPitchResult; } }
     if (window._lastResumeResult) { var b = document.getElementById('resumeResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastResumeResult; } }
     if (window._lastInterviewResult) { var b = document.getElementById('interviewResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastInterviewResult; } }
-  }, 150);
+  }
+  setTimeout(restoreResults, 100);
+  setTimeout(restoreResults, 500);
+  setTimeout(restoreResults, 1500);
 }
 
 async function refreshJdSelects() {
