@@ -570,8 +570,15 @@ function renderNewJob(container) {
     if (tabName === 'pitch' || tabName === 'resume' || tabName === 'interview') refreshJdSelects();
     if (tabName === 'resume') loadResumeForOptimize();
   }));
-  // 恢复之前上传的截图预览（跨页面导航不丢失）
+  // 恢复之前上传的截图预览
   setTimeout(() => restoreImagePreviewUI(), 50);
+  // 恢复生成结果（跨Tab导航不丢失）
+  setTimeout(() => {
+    if (window._lastJDResult) { var b = document.getElementById('jdResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastJDResult; } }
+    if (window._lastPitchResult) { var b = document.getElementById('pitchResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastPitchResult; } }
+    if (window._lastResumeResult) { var b = document.getElementById('resumeResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastResumeResult; } }
+    if (window._lastInterviewResult) { var b = document.getElementById('interviewResult'); if (b) { b.style.display = 'block'; b.className = 'result-box'; b.innerHTML = window._lastInterviewResult; } }
+  }, 150);
 }
 
 async function refreshJdSelects() {
@@ -846,6 +853,7 @@ async function parseJD() {
     resultBox.innerHTML = `<h4 style="margin-top:0">✅ 解析结果</h4>` + markdownToHtml(output);
     // Store for later use
     window._lastParsedJD = { raw: jd, parsed: output };
+    window._lastJDResult = resultBox.innerHTML;
     // Auto-fill save form
     fillSaveForm(output, jd);
     showToast('JD解析完成！已自动填充保存表单', 'success');
@@ -912,6 +920,7 @@ ${resume}
     );
     resultBox.className = 'result-box';
     resultBox.innerHTML = renderPitchVariants(output);
+    window._lastPitchResult = resultBox.innerHTML;
     // Auto-fill save form
     const se = document.getElementById('savePitch');
     if (se) se.value = output;
@@ -986,6 +995,7 @@ ${resume}
     );
     resultBox.className = 'result-box';
     resultBox.innerHTML = renderResumeResult(output);
+    window._lastResumeResult = resultBox.innerHTML;
     // Extract match rate
     const rateMatch = output.match(/匹配度评分\s*\n.*?(\d+)/i);
     const rate = rateMatch ? parseInt(rateMatch[1]) : null;
@@ -1308,11 +1318,22 @@ function formatDate(iso) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function markdownToHtml(md) {
-  return md
-    .replace(/### (.+)/g, '<h4>$1</h4>')
-    .replace(/## (.+)/g, '<h3>$1</h3>')
-    .replace(/\n- (.+)/g, '\n• $1')
-    .replace(/\n/g, '<br>');
+  var h = md;
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/^[\*\-\•]\s/gm, '• ');
+  h = h.replace(/^### (.+)$/gm, '<h4 style="margin:16px 0 8px">$1</h4>');
+  h = h.replace(/^## (.+)$/gm, '<h3 style="margin:20px 0 10px;color:var(--primary)">$1</h3>');
+  h = h.replace(/^# (.+)$/gm, '<h2 style="margin:24px 0 12px">$1</h2>');
+  h = h.replace(/^- (.+)$/gm, '<li style="margin:4px 0;line-height:1.7">$1</li>');
+  h = h.replace(/((?:<li[^>]*>.*?<\/li>\n?)+)/g, '<ul style="padding-left:20px;margin:8px 0">$1</ul>');
+  h = h.replace(/\*\*/g, '');
+  h = h.replace(/^\* /gm, '• ');
+  h = h.replace(/\n\n/g, '</p><p style="margin:12px 0;line-height:1.8">');
+  h = h.replace(/\n/g, '<br>');
+  h = '<p style="margin:8px 0;line-height:1.8">' + h + '</p>';
+  h = h.replace(/<p[^>]*><\/p>/g, '');
+  h = h.replace(/<li([^>]*)><br>/g, '<li$1>');
+  return h;
 }
 function copyText(text) {
   navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success'));
