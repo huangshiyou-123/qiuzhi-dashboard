@@ -38,12 +38,11 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: '宋体', 'SimSun', 'Noto Serif CJK SC', serif;
   background: var(--bg);
   color: var(--text);
   display: flex;
   min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
 }
 
 .sidebar {
@@ -1017,7 +1016,7 @@ function renderResumeResult(text) {
   });
   html = html.replace(/###\s*(.+)/g, '<h4>$1</h4>');
   html = html.replace(/\n- (.+)/g, '\n• $1');
-  html = html.replace(/\*\*/g, '');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*/g, '');
   html = html.replace(/\n/g, '<br>');
   return html;
