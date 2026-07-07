@@ -266,7 +266,10 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
     <li class="nav-item" data-view="kanban">
       <span class="nav-icon">📋</span> 状态看板
     </li>
-    <li class="nav-item" data-view="analytics">
+    <li class="nav-item" data-view="offer-compare">
+	      <span class="nav-icon">⚖️</span> Offer对比
+	    </li>
+	    <li class="nav-item" data-view="analytics">
       <span class="nav-icon">📈</span> 数据面板
     </li>
   </ul>
@@ -399,6 +402,7 @@ function renderView(view) {
     case 'new-job': renderNewJob(content); break;
     case 'kanban': renderKanban(content); break;
     case 'analytics': renderAnalytics(content); break;
+		case 'offer-compare': renderOfferCompare(content); break;
   }
   updateBottomBar();
 }
@@ -464,7 +468,8 @@ function renderNewJob(container) {
       <div class="tab active" data-tab="parse">🔍 JD解析</div>
       <div class="tab" data-tab="pitch">💬 生成话术</div>
       <div class="tab" data-tab="resume">📝 优化简历</div>
-      <div class="tab" data-tab="save">💾 保存记录</div>
+      <div class="tab" data-tab="interview">🎯 面试备战</div>
+	      <div class="tab" data-tab="save">💾 保存记录</div>
     </div>
     <div class="tab-content active" id="tab-parse">
       <div class="card">
@@ -513,7 +518,23 @@ function renderNewJob(container) {
         <div class="result-box" id="resumeResult" style="display:none"></div>
       </div>
     </div>
-    <div class="tab-content" id="tab-save">
+    	    <div class="tab-content" id="tab-interview">
+	      <div class="card">
+	        <h3>🎯 面试备战 — 基于JD生成面试问题</h3>
+	        <div class="form-group"><label>选择JD</label><div style="display:flex;gap:8px"><select id="interviewJdSelect" style="flex:1"><option value="">— 请先在JD解析中保存一条 —</option></select><button class="btn btn-danger btn-sm" onclick="deleteSelectedJD('interview')" title="删除选中的JD">🗑️</button></div></div>
+	        <label>面试类型</label>
+	        <div class="btn-group">
+	          <button class="btn btn-outline btn-sm active" id="intvTypeAll" onclick="selectInterviewType('all', this)">📋 全部</button>
+	          <button class="btn btn-outline btn-sm" id="intvTypeSelf" onclick="selectInterviewType('self', this)">👤 自我介绍</button>
+	          <button class="btn btn-outline btn-sm" id="intvTypeTech" onclick="selectInterviewType('tech', this)">🔧 技术问题</button>
+	          <button class="btn btn-outline btn-sm" id="intvTypeBehavior" onclick="selectInterviewType('behavior', this)">💬 行为面试</button>
+	          <button class="btn btn-outline btn-sm" id="intvTypeAsk" onclick="selectInterviewType('ask', this)">❓ 反问面试官</button>
+	        </div>
+	        <div class="btn-group" style="margin-top:12px"><button class="btn btn-primary" onclick="generateInterview()">🎯 生成面试问题</button></div>
+	        <div class="result-box" id="interviewResult" style="display:none"></div>
+	      </div>
+	    </div>
+	    <div class="tab-content" id="tab-save">
       <div class="card">
         <h3>💾 保存到看板</h3>
         <div class="two-col">
@@ -545,7 +566,7 @@ function renderNewJob(container) {
     this.classList.add('active');
     document.getElementById('tab-'+tabName).classList.add('active');
     currentTab = tabName;
-    if (tabName === 'pitch' || tabName === 'resume') refreshJdSelects();
+    if (tabName === 'pitch' || tabName === 'resume' || tabName === 'interview') refreshJdSelects();
     if (tabName === 'resume') loadResumeForOptimize();
   }));
   // 恢复之前上传的截图预览（跨页面导航不丢失）
@@ -780,18 +801,42 @@ async function parseJD() {
   resultBox.textContent = 'AI解析中...';
   try {
     const output = await callDeepSeek(
-      `你是一个专业的JD解析助手。用户会粘贴一条招聘JD，请提取以下结构化信息。严格按Markdown格式输出，不要添加额外解释。
+      `你是一名资深HRBP和职业规划师。请深度解析以下招聘JD，按Markdown格式输出。只提取JD中明确提到的信息，不编造。
 
-## 公司名称
-## 岗位名称
-## 薪资范围（如未提及写"未标注"）
-## 工作地点
-## 核心技能要求（每条用-开头，每条≤15字）
-## 加分项（每条用-开头，如未提及写"无"）
-## 岗位亮点（该岗位最吸引人的1-2个点）
-## 一句话岗位总结
+## 一、基本信息
+- **公司名称**：
+- **岗位名称**：
+- **薪资范围**：（未标注写"未标注"）
+- **工作地点**：
+- **学历要求**：（未标注写"未标注"）
+- **经验要求**：（未标注写"未标注"）
 
-规则：不编造JD中没有的信息。中文输出。`,
+## 二、公司背景分析
+- **所属行业/赛道**：
+- **公司规模**：（未提及写"未标注"）
+- **一句话公司定位**：（根据JD描述推断该公司核心业务）
+
+## 三、岗位职责拆解
+（逐条列出，每条用一句话概括，前面标注重要程度：⭐⭐⭐核心 / ⭐⭐常规 / ⭐辅助）
+
+## 四、技能要求分析
+**硬技能（必须掌握的工具/技术）：**
+（逐条列出）
+**软技能（沟通/思维/协作等）：**
+（逐条列出）
+
+## 五、岗位竞争力分析
+- **该岗位最吸引人的1-2个点**：
+- **可能面临的挑战**：（根据JD推测）
+- **职业发展路径预估**：入职后可往哪些方向发展
+
+## 六、简历关键词
+（列出5-10个该JD中的高频关键词，用于简历过机筛）
+
+## 七、一句话总结
+（用"你需要一个[什么样]的人来[做什么事]"的句式概括）
+
+规则：不编造JD中没有的信息。标注"未标注"或"推测"时需说明依据。中文输出。`,
       jd
     );
     resultBox.className = 'result-box';
@@ -820,6 +865,44 @@ function fillSaveForm(parsedText, rawJD) {
   if (jpe) jpe.value = parsedText || '';
 }
 
+let currentInterviewType = 'all';
+function selectInterviewType(type, btn) {
+  currentInterviewType = type;
+  btn.parentElement.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+async function generateInterview() {
+  const jdId = document.getElementById('interviewJdSelect').value;
+  if (!jdId) { showToast('请先选择一条JD', 'error'); return; }
+  let parsed;
+  if (jdId === '_recent') {
+    if (!window._lastParsedJD) { showToast('刚解析的JD已失效，请重新解析', 'error'); return; }
+    parsed = window._lastParsedJD.parsed;
+  } else {
+    const app = await db.applications.get(parseInt(jdId));
+    parsed = app.jdParsed || app.jdRaw;
+  }
+  const box = document.getElementById('interviewResult');
+  box.style.display = 'block'; box.className = 'result-box loading'; box.textContent = 'AI生成面试题中...';
+  const resumeSetting = await db.settings.get('resume');
+  const resume = resumeSetting ? resumeSetting.value : '';
+  const typeMap = {
+    'all': '请生成全套面试准备内容，包括：1.自我介绍模板(30秒/1分钟/2分钟三个版本) 2.技术/专业面试问题(5-8题，附参考答案) 3.行为面试题(3-5题，用STAR方法提示答题思路) 4.反问面试官的问题(2-3个) 5.该岗位可能的场景题/案例题(1-2题)',
+    'self': '请生成针对该岗位的自我介绍模板，包括30秒、1分钟、2分钟三个版本。每个版本突出不同侧重点：30秒版说核心亮点，1分钟版加入项目经验，2分钟版展开讲与岗位的匹配度。要结合用户简历和JD具体要求来定制。',
+    'tech': '请基于该JD的硬技能要求，生成5-8个技术/专业面试问题，每题附上参考答案。问题要有深度，能考察候选人的真实能力，而不是背答案。',
+    'behavior': '请基于该岗位特点，生成3-5个行为面试题(参考宝洁八大问和STAR方法)。每题说明考察意图，并给出分步骤的答题思路提示（不是标准答案，而是引导思考的方向）。',
+    'ask': '请生成3-4个面试最后反问面试官的问题。问题要展现你对公司和岗位做了功课，能体现思考深度，而不是"公司福利怎么样"这类低级问题。每个问题附简短说明为什么这样问。'
+  };
+  const prompt = typeMap[type] || typeMap['all'];
+  try {
+    const output = await callDeepSeek(
+      '你是一个资深面试教练和职业顾问。你擅长帮求职者准备面试，会根据JD和候选人背景定制面试准备方案。\n\n## 目标JD\n' + parsed + '\n\n## 候选人简历\n' + (resume || '（未提供）'),
+      prompt
+    );
+    box.className = 'result-box';
+    box.innerHTML = '<h4 style="margin-top:0">🎯 面试备战方案</h4>' + markdownToHtml(output);
+  } catch(e) { box.className = 'result-box'; box.textContent = '生成失败：' + e.message; }
+}
 async function generatePitch() {
   const jdId = document.getElementById('pitchJdSelect').value;
   if (!jdId) { showToast('请先选择一条JD（可先解析后从下拉选"刚解析的JD"）', 'error'); return; }
