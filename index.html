@@ -1367,67 +1367,6 @@ document.addEventListener('click', e => {
     e.target.classList.remove('show');
   }
 });
-
-// ============ Offer Comparison ============
-function renderOfferCompare(container) {
-  container.innerHTML = '<div class="card"><h3>⚖️ Offer对比器</h3><p style="color:var(--muted);margin-bottom:16px">对比两份Offer，帮你做决策</p><div class="two-col"><div><div class="form-group"><label>Offer A — 公司名称</label><input type="text" id="offerACompany" placeholder="如：字节跳动"></div><div class="form-group"><label>月薪/年薪</label><input type="text" id="offerASalary" placeholder="如：15K*14薪"></div><div class="form-group"><label>福利亮点</label><textarea id="offerABenefits" style="min-height:60px" placeholder="五险一金/房补/期权/带薪年假..."></textarea></div><div class="form-group"><label>通勤时间</label><input type="text" id="offerACommute" placeholder="如：地铁30分钟"></div><div class="form-group"><label>其他备注</label><textarea id="offerANotes" style="min-height:50px" placeholder="公司发展阶段、团队氛围、发展空间..."></textarea></div></div><div><div class="form-group"><label>Offer B — 公司名称</label><input type="text" id="offerBCompany" placeholder="如：腾讯"></div><div class="form-group"><label>月薪/年薪</label><input type="text" id="offerBSalary" placeholder="如：12K*16薪"></div><div class="form-group"><label>福利亮点</label><textarea id="offerBBenefits" style="min-height:60px" placeholder="五险一金/房补/期权/带薪年假..."></textarea></div><div class="form-group"><label>通勤时间</label><input type="text" id="offerBCommute" placeholder="如：地铁45分钟"></div><div class="form-group"><label>其他备注</label><textarea id="offerBNotes" style="min-height:50px" placeholder="公司发展阶段、团队氛围、发展空间..."></textarea></div></div></div><div class="btn-group"><button class="btn btn-primary" onclick="compareOffers()">⚖️ AI分析对比</button><button class="btn btn-outline" onclick="clearOfferCompare()">清空</button></div><div class="result-box" id="offerResult" style="display:none;margin-top:16px"></div></div>';
-}
-
-async function compareOffers() {
-  const a = {
-    company: document.getElementById('offerACompany').value.trim(),
-    salary: document.getElementById('offerASalary').value.trim(),
-    benefits: document.getElementById('offerABenefits').value.trim(),
-    commute: document.getElementById('offerACommute').value.trim(),
-    notes: document.getElementById('offerANotes').value.trim()
-  };
-  const b = {
-    company: document.getElementById('offerBCompany').value.trim(),
-    salary: document.getElementById('offerBSalary').value.trim(),
-    benefits: document.getElementById('offerBBenefits').value.trim(),
-    commute: document.getElementById('offerBCommute').value.trim(),
-    notes: document.getElementById('offerBNotes').value.trim()
-  };
-  if (!a.company || !b.company) { showToast('请至少填写两家公司的名称', 'error'); return; }
-  const box = document.getElementById('offerResult');
-  box.style.display = 'block'; box.className = 'result-box loading'; box.textContent = 'AI分析中...';
-  try {
-    const output = await callDeepSeek(
-      '你是一个职业规划顾问。请基于用户提供的两份Offer信息，从薪资、福利、通勤、发展空间、工作强度等维度进行客观对比分析，最后给出推荐。
-
-## 重要规则
-- 逐维度对比，指出各自的优劣
-- 不要只说选A或选B，要解释为什么
-- 如果某个维度信息不足，指出需要补充什么信息
-- 最终给出综合建议，但尊重用户个人的偏好
-- 用Markdown格式输出，包含一个对比表格',
-      '## Offer A
-公司：' + a.company + '
-薪资：' + a.salary + '
-福利：' + a.benefits + '
-通勤：' + a.commute + '
-备注：' + a.notes + '
-
-## Offer B
-公司：' + b.company + '
-薪资：' + b.salary + '
-福利：' + b.benefits + '
-通勤：' + b.commute + '
-备注：' + b.notes
-    );
-    box.className = 'result-box';
-    box.innerHTML = '<h4 style="margin-top:0">⚖️ 对比分析</h4>' + markdownToHtml(output);
-  } catch(e) { box.className = 'result-box'; box.textContent = '分析失败：' + e.message; }
-}
-
-function clearOfferCompare() {
-  ['offerACompany','offerASalary','offerABenefits','offerACommute','offerANotes','offerBCompany','offerBSalary','offerBBenefits','offerBCommute','offerBNotes'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  const box = document.getElementById('offerResult');
-  if (box) box.style.display = 'none';
-}
-
 </script>
 </body>
 </html>
