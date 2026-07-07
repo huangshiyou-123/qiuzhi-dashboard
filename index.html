@@ -584,10 +584,8 @@ async function refreshJdSelects() {
   }
   const sel1 = document.getElementById('pitchJdSelect');
   const sel2 = document.getElementById('resumeJdSelect');
-  const sel3 = document.getElementById('interviewJdSelect');
   if (sel1) sel1.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
   if (sel2) sel2.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
-  if (sel3) sel3.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
 }
 function extractField(text, fieldName) {
   const m = text.match(new RegExp('##\\s*' + fieldName + '\\s*\\n(.+)'));
@@ -595,7 +593,7 @@ function extractField(text, fieldName) {
 }
 
 async function deleteSelectedJD(type) {
-  const selId = type === 'interview' ? 'interviewJdSelect' : (type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect');
+  const selId = type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect';
   const jdId = document.getElementById(selId).value;
   if (!jdId || jdId === '_recent') { showToast('请选择一条已保存的JD才能删除', 'error'); return; }
   if (!confirm('确定删除这条JD记录？删除后不可恢复。')) return;
