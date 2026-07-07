@@ -989,7 +989,12 @@ ${resume}
 （JD要求但简历缺失的，用-列表，如没有则写"无"）
 
 ### 优化后的简历文本
-（基于原简历改写，只调整与JD相关的表达和侧重点，保留原有格式结构。不改学历信息，不编造经历。禁止使用**或*等星号格式标记。）`,
+基于原简历改写，格式要求：
+- 大区块标题用"## 标题名"格式（如：## 个人信息、## 项目经验），不要用**
+- 每个条目用"- "开头作为项目符号
+- 小标题（如公司名+岗位名+日期）加粗用**文字**格式
+- 不改学历信息，不编造经历
+- 文字要填满版面，每个条目写完整，不要用片段`,
       '请分析并优化'
     );
     var resumeHtml = renderResumeResult(output);
@@ -1022,23 +1027,23 @@ function renderResumeResult(text) {
     var color = s >= 70 ? 'var(--accent)' : s >= 40 ? 'var(--warning)' : 'var(--danger)';
     return '<div class="match-score" style="color:' + color + ';font-size:38px;font-weight:800;margin:12px 0">' + s + '/100</div><h4 style="margin:4px 0 16px;color:var(--muted)">匹配度评分</h4>';
   });
-  // Major section headers (lines starting with **Title**)
-  h = h.replace(/^\*\*(.+?)\*\*\s*$/gm, '<div class="resume-section-header"><strong>$1</strong></div>');
-  // Bold text
-  h = h.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text)">$1</strong>');
+  // Major section headers (## Title)
+  h = h.replace(/^## (.+)$/gm, '<div class="resume-section-header">$1</div>');
+  // Bold text **text**
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong style="font-size:15px">$1</strong>');
   // Remove remaining single *
   h = h.replace(/\*/g, '');
   // Sub-headers (###)
-  h = h.replace(/^### (.+)$/gm, '<h4 style="margin:18px 0 8px;font-size:15px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px">$1</h4>');
+  h = h.replace(/^### (.+)$/gm, '<h4 style="margin:16px 0 6px;font-size:15px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:4px">$1</h4>');
   // Bullet items
-  h = h.replace(/^[\-•]\s(.+)$/gm, '<div style="margin:3px 0 3px 12px;line-height:1.8">• $1</div>');
+  h = h.replace(/^[\-•]\s(.+)$/gm, '<div style="margin:2px 0 2px 8px;line-height:1.9;padding-left:4px">• $1</div>');
   // Separator lines (---)
-  h = h.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">');
+  h = h.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:14px 0">');
   // Double newlines = new paragraph
   h = h.replace(/\n\n/g, '<br><br>');
   // Single newlines
   h = h.replace(/\n/g, '<br>');
-  // Cleanup empty divs
+  // Cleanup
   h = h.replace(/<div[^>]*>•\s*<\/div>/g, '');
   return h;
 }
