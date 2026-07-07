@@ -266,6 +266,9 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
     <li class="nav-item" data-view="kanban">
       <span class="nav-icon">📋</span> 状态看板
     </li>
+    <li class="nav-item" data-view="offer-compare">
+      <span class="nav-icon">⚖️</span> Offer对比
+    </li>
     <li class="nav-item" data-view="analytics">
       <span class="nav-icon">📈</span> 数据面板
     </li>
@@ -347,7 +350,8 @@ const VIEW_TITLES = {
   dashboard: '仪表盘',
   'new-job': '新增岗位',
   kanban: '状态看板',
-  analytics: '数据面板'
+  analytics: '数据面板',
+  'offer-compare': 'Offer对比器'
 };
 const STATUSES = ['saved', 'applied', 'viewed', 'replied', 'interview', 'offer', 'rejected'];
 const STATUS_LABELS = {
@@ -399,6 +403,7 @@ function renderView(view) {
     case 'new-job': renderNewJob(content); break;
     case 'kanban': renderKanban(content); break;
     case 'analytics': renderAnalytics(content); break;
+    case 'offer-compare': renderOfferCompare(content); break;
   }
   updateBottomBar();
 }
@@ -464,6 +469,7 @@ function renderNewJob(container) {
       <div class="tab active" data-tab="parse">🔍 JD解析</div>
       <div class="tab" data-tab="pitch">💬 生成话术</div>
       <div class="tab" data-tab="resume">📝 优化简历</div>
+      <div class="tab" data-tab="interview">🎯 面试备战</div>
       <div class="tab" data-tab="save">💾 保存记录</div>
     </div>
     <div class="tab-content active" id="tab-parse">
@@ -513,6 +519,22 @@ function renderNewJob(container) {
         <div class="result-box" id="resumeResult" style="display:none"></div>
       </div>
     </div>
+    <div class="tab-content" id="tab-interview">
+      <div class="card">
+        <h3>🎯 面试备战 — 基于JD生成面试问题</h3>
+        <div class="form-group"><label>选择JD</label><div style="display:flex;gap:8px"><select id="interviewJdSelect" style="flex:1"><option value="">— 请先在JD解析中保存一条 —</option></select><button class="btn btn-danger btn-sm" onclick="deleteSelectedJD('interview')">🗑️</button></div></div>
+        <label>面试类型</label>
+        <div class="btn-group" id="intvTypeBtns">
+          <button class="btn btn-outline btn-sm active" onclick="setInterviewType('all',this)">📋 全部</button>
+          <button class="btn btn-outline btn-sm" onclick="setInterviewType('self',this)">👤 自我介绍</button>
+          <button class="btn btn-outline btn-sm" onclick="setInterviewType('tech',this)">🔧 技术问题</button>
+          <button class="btn btn-outline btn-sm" onclick="setInterviewType('behavior',this)">💬 行为面试</button>
+          <button class="btn btn-outline btn-sm" onclick="setInterviewType('ask',this)">❓ 反问面试官</button>
+        </div>
+        <div class="btn-group" style="margin-top:12px"><button class="btn btn-primary" onclick="generateInterview()">🎯 生成面试问题</button></div>
+        <div class="result-box" id="interviewResult" style="display:none"></div>
+      </div>
+    </div>
     <div class="tab-content" id="tab-save">
       <div class="card">
         <h3>💾 保存到看板</h3>
@@ -545,7 +567,7 @@ function renderNewJob(container) {
     this.classList.add('active');
     document.getElementById('tab-'+tabName).classList.add('active');
     currentTab = tabName;
-    if (tabName === 'pitch' || tabName === 'resume') refreshJdSelects();
+    if (tabName === 'pitch' || tabName === 'resume' || tabName === 'interview') refreshJdSelects();
     if (tabName === 'resume') loadResumeForOptimize();
   }));
   // 恢复之前上传的截图预览（跨页面导航不丢失）
@@ -563,8 +585,10 @@ async function refreshJdSelects() {
   }
   const sel1 = document.getElementById('pitchJdSelect');
   const sel2 = document.getElementById('resumeJdSelect');
+  const sel3 = document.getElementById('interviewJdSelect');
   if (sel1) sel1.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
   if (sel2) sel2.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
+  if (sel3) sel3.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
 }
 function extractField(text, fieldName) {
   const m = text.match(new RegExp('##\\s*' + fieldName + '\\s*\\n(.+)'));
@@ -572,7 +596,7 @@ function extractField(text, fieldName) {
 }
 
 async function deleteSelectedJD(type) {
-  const selId = type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect';
+  const selId = type === 'interview' ? 'interviewJdSelect' : (type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect');
   const jdId = document.getElementById(selId).value;
   if (!jdId || jdId === '_recent') { showToast('请选择一条已保存的JD才能删除', 'error'); return; }
   if (!confirm('确定删除这条JD记录？删除后不可恢复。')) return;
@@ -729,9 +753,10 @@ async function runTesseractOCR(resultBox) {
 }
 
 // ============ AI Calls ============
-const DEFAULT_API_KEY = 'sk-qsnkddsgneqatkphrizufgngdpavbmggxojjzaujbduttaov';
-const DEFAULT_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
-const DEFAULT_MODEL = 'deepseek-ai/DeepSeek-V3';
+var DEFAULT_API_KEY = 'sk-qsnkddsgneqatkphrizufgngdpavbmggxojjzaujbduttaov';
+var DEFAULT_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+var DEFAULT_MODEL = 'deepseek-ai/DeepSeek-V3';
+var DEFAULT_QWEN_KEY = 'sk-ws-H.EMMYXXH.fYGO.MEUCIQDHsIUHJtnsv5f4v6fwO8QijG5SSKrp2rRizw6ZzoUJSAIgXXhR91eyhPnauCOk1GCGfUM1bKx4lgXfSVT-qTrgJ80';
 
 async function callDeepSeek(systemPrompt, userContent, imageDataUrl = null) {
   const apiKeySetting = await db.settings.get('apiKey');
@@ -1306,5 +1331,6 @@ document.addEventListener('click', e => {
   }
 });
 </script>
+<script src="features.js"></script>
 </body>
 </html>
