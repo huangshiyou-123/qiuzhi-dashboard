@@ -266,7 +266,10 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
     <li class="nav-item" data-view="kanban">
       <span class="nav-icon">📋</span> 状态看板
     </li>
-    <li class="nav-item" data-view="analytics">
+    <li class="nav-item" data-view="offer-compare">
+	      <span class="nav-icon">⚖️</span> Offer对比
+	    </li>
+	    <li class="nav-item" data-view="analytics">
       <span class="nav-icon">📈</span> 数据面板
     </li>
   </ul>
@@ -399,6 +402,7 @@ function renderView(view) {
     case 'new-job': renderNewJob(content); break;
     case 'kanban': renderKanban(content); break;
     case 'analytics': renderAnalytics(content); break;
+		case 'offer-compare': renderOfferCompare(content); break;
   }
   updateBottomBar();
 }
@@ -464,7 +468,8 @@ function renderNewJob(container) {
       <div class="tab active" data-tab="parse">🔍 JD解析</div>
       <div class="tab" data-tab="pitch">💬 生成话术</div>
       <div class="tab" data-tab="resume">📝 优化简历</div>
-      <div class="tab" data-tab="save">💾 保存记录</div>
+      <div class="tab" data-tab="interview">🎯 面试备战</div>
+	      <div class="tab" data-tab="save">💾 保存记录</div>
     </div>
     <div class="tab-content active" id="tab-parse">
       <div class="card">
@@ -513,7 +518,23 @@ function renderNewJob(container) {
         <div class="result-box" id="resumeResult" style="display:none"></div>
       </div>
     </div>
-    <div class="tab-content" id="tab-save">
+    <div class="tab-content" id="tab-interview">
+	      <div class="card">
+	        <h3>🎯 面试备战 — 基于JD生成面试问题</h3>
+	        <div class="form-group"><label>选择JD</label><div style="display:flex;gap:8px"><select id="interviewJdSelect" style="flex:1"><option value="">— 请先在JD解析中保存一条 —</option></select><button class="btn btn-danger btn-sm" onclick="deleteSelectedJD('interview')">🗑️</button></div></div>
+	        <label>面试类型</label>
+	        <div class="btn-group" id="intvTypeBtns">
+	          <button class="btn btn-outline btn-sm active" onclick="setInterviewType('all',this)">📋 全部</button>
+	          <button class="btn btn-outline btn-sm" onclick="setInterviewType('self',this)">👤 自我介绍</button>
+	          <button class="btn btn-outline btn-sm" onclick="setInterviewType('tech',this)">🔧 技术问题</button>
+	          <button class="btn btn-outline btn-sm" onclick="setInterviewType('behavior',this)">💬 行为面试</button>
+	          <button class="btn btn-outline btn-sm" onclick="setInterviewType('ask',this)">❓ 反问面试官</button>
+	        </div>
+	        <div class="btn-group" style="margin-top:12px"><button class="btn btn-primary" onclick="generateInterview()">🎯 生成面试问题</button></div>
+	        <div class="result-box" id="interviewResult" style="display:none"></div>
+	      </div>
+	    </div>
+	    <div class="tab-content" id="tab-save">
       <div class="card">
         <h3>💾 保存到看板</h3>
         <div class="two-col">
@@ -545,7 +566,7 @@ function renderNewJob(container) {
     this.classList.add('active');
     document.getElementById('tab-'+tabName).classList.add('active');
     currentTab = tabName;
-    if (tabName === 'pitch' || tabName === 'resume') refreshJdSelects();
+    if (tabName === 'pitch' || tabName === 'resume' || tabName === 'interview') refreshJdSelects();
     if (tabName === 'resume') loadResumeForOptimize();
   }));
   // 恢复之前上传的截图预览（跨页面导航不丢失）
@@ -563,8 +584,10 @@ async function refreshJdSelects() {
   }
   const sel1 = document.getElementById('pitchJdSelect');
   const sel2 = document.getElementById('resumeJdSelect');
+  const sel3 = document.getElementById('interviewJdSelect');
   if (sel1) sel1.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
   if (sel2) sel2.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
+  if (sel3) sel3.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
 }
 function extractField(text, fieldName) {
   const m = text.match(new RegExp('##\\s*' + fieldName + '\\s*\\n(.+)'));
@@ -572,7 +595,7 @@ function extractField(text, fieldName) {
 }
 
 async function deleteSelectedJD(type) {
-  const selId = type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect';
+  const selId = type === 'interview' ? 'interviewJdSelect' : (type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect');
   const jdId = document.getElementById(selId).value;
   if (!jdId || jdId === '_recent') { showToast('请选择一条已保存的JD才能删除', 'error'); return; }
   if (!confirm('确定删除这条JD记录？删除后不可恢复。')) return;
@@ -843,6 +866,81 @@ function fillSaveForm(parsedText, rawJD) {
   if (jpe) jpe.value = parsedText || '';
 }
 
+let interviewType = 'all';
+function setInterviewType(type, btn) {
+  interviewType = type;
+  document.querySelectorAll('#intvTypeBtns .btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+async function generateInterview() {
+  var jdId = document.getElementById('interviewJdSelect').value;
+  if (!jdId) { showToast('请先选择一条JD', 'error'); return; }
+  var parsed;
+  if (jdId === '_recent') {
+    if (!window._lastParsedJD) { showToast('刚解析的JD已失效，请重新解析', 'error'); return; }
+    parsed = window._lastParsedJD.parsed;
+  } else {
+    var app = await db.applications.get(parseInt(jdId));
+    parsed = app.jdParsed || app.jdRaw;
+  }
+  var box = document.getElementById('interviewResult');
+  box.style.display = 'block'; box.className = 'result-box loading'; box.textContent = 'AI生成面试题中...';
+  var resumeSetting = await db.settings.get('resume');
+  var resume = resumeSetting ? resumeSetting.value : '';
+  var prompts = {};
+  prompts['all'] = '请为该岗位生成全套面试准备：1.自我介绍模板(30秒/1分钟/2分钟三个版本) 2.技术/专业问题(5-8题附参考答案) 3.行为面试题(3-5题，用STAR方法提示思路) 4.反问面试官(2-3个) 5.场景题(1-2题)';
+  prompts['self'] = '请生成针对该岗位的自我介绍模板，包括30秒、1分钟、2分钟三个版本。结合JD要求和候选人简历来定制，突出匹配度。';
+  prompts['tech'] = '请基于该JD的硬技能要求，生成5-8个专业面试问题，每题附参考答案。';
+  prompts['behavior'] = '请基于该岗位特点，生成3-5个行为面试题(参考STAR方法)。每题说明考察意图和答题思路。';
+  prompts['ask'] = '请生成3-4个反问面试官的问题，要体现对公司和岗位做了功课。';
+  var prompt = prompts[interviewType] || prompts['all'];
+  try {
+    var output = await callDeepSeek(
+      '你是一个资深面试教练。\n\n## 目标JD\n' + parsed + '\n\n## 候选人简历\n' + (resume || '（未提供）'),
+      prompt
+    );
+    box.className = 'result-box';
+    box.innerHTML = '<h4 style="margin-top:0">🎯 面试备战方案</h4>' + markdownToHtml(output);
+  } catch(e) { box.className = 'result-box'; box.textContent = '生成失败：' + e.message; }
+}
+let interviewType = 'all';
+function setInterviewType(type, btn) {
+  interviewType = type;
+  document.querySelectorAll('#intvTypeBtns .btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+async function generateInterview() {
+  var jdId = document.getElementById('interviewJdSelect').value;
+  if (!jdId) { showToast('请先选择一条JD', 'error'); return; }
+  var parsed;
+  if (jdId === '_recent') {
+    if (!window._lastParsedJD) { showToast('刚解析的JD已失效，请重新解析', 'error'); return; }
+    parsed = window._lastParsedJD.parsed;
+  } else {
+    var app = await db.applications.get(parseInt(jdId));
+    parsed = app.jdParsed || app.jdRaw;
+  }
+  var box = document.getElementById('interviewResult');
+  box.style.display = 'block'; box.className = 'result-box loading'; box.textContent = 'AI生成面试题中...';
+  var resumeSetting = await db.settings.get('resume');
+  var resume = resumeSetting ? resumeSetting.value : '';
+  var prompts = {};
+  prompts['all'] = '请为该岗位生成全套面试准备：1.自我介绍模板(30秒/1分钟/2分钟三个版本) 2.技术/专业问题(5-8题附参考答案) 3.行为面试题(3-5题，用STAR方法提示思路) 4.反问面试官(2-3个) 5.场景题(1-2题)';
+  prompts['self'] = '请生成针对该岗位的自我介绍模板，包括30秒、1分钟、2分钟三个版本。结合JD要求和候选人简历来定制，突出匹配度。';
+  prompts['tech'] = '请基于该JD的硬技能要求，生成5-8个专业面试问题，每题附参考答案。';
+  prompts['behavior'] = '请基于该岗位特点，生成3-5个行为面试题(参考STAR方法)。每题说明考察意图和答题思路。';
+  prompts['ask'] = '请生成3-4个反问面试官的问题，要体现对公司和岗位做了功课。';
+  var prompt = prompts[interviewType] || prompts['all'];
+  try {
+    var output = await callDeepSeek(
+      '你是一个资深面试教练。\n\n## 目标JD\n' + parsed + '\n\n## 候选人简历\n' + (resume || '（未提供）'),
+      prompt
+    );
+    box.className = 'result-box';
+    box.innerHTML = '<h4 style="margin-top:0">🎯 面试备战方案</h4>' + markdownToHtml(output);
+  } catch(e) { box.className = 'result-box'; box.textContent = '生成失败：' + e.message; }
+}
+async function generatePitch() {
 async function generatePitch() {
   const jdId = document.getElementById('pitchJdSelect').value;
   if (!jdId) { showToast('请先选择一条JD（可先解析后从下拉选"刚解析的JD"）', 'error'); return; }
@@ -1305,6 +1403,535 @@ document.addEventListener('click', e => {
     e.target.classList.remove('show');
   }
 });
+</script>
+</body>
+</html>
+  const jdId = document.getElementById('pitchJdSelect').value;
+  if (!jdId) { showToast('请先选择一条JD（可先解析后从下拉选"刚解析的JD"）', 'error'); return; }
+  let jdParsed, jdRaw;
+  if (jdId === '_recent') {
+    if (!window._lastParsedJD) { showToast('刚解析的JD已失效，请重新解析', 'error'); return; }
+    jdParsed = window._lastParsedJD.parsed; jdRaw = window._lastParsedJD.raw || '';
+  } else {
+    const app = await db.applications.get(parseInt(jdId));
+    if (!app) { showToast('未找到该JD记录', 'error'); return; }
+    jdParsed = app.jdParsed || app.jdRaw; jdRaw = app.jdRaw || '';
+  }
+  const resumeSetting = await db.settings.get('resume');
+  const resume = resumeSetting ? resumeSetting.value : '应届生，计算机网络专业，有AI产品设计经验';
+
+  const resultBox = document.getElementById('pitchResult');
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box loading';
+  resultBox.textContent = '生成话术中...';
+  try {
+    const output = await callDeepSeek(
+      `你是一个求职话术助手。根据以下JD和用户背景，生成BOSS直聘打招呼话术。
+
+## JD信息
+${jdParsed || jdRaw || '无JD信息'}
+
+## 用户背景
+${resume}
+
+生成三种语气版本，严格用"### 标准版"、"### 热情版"、"### 简洁版"作为分隔：
+
+### 标准版 — 专业得体，适合大多数情况
+### 热情版 — 展现对该公司的了解和兴趣
+### 简洁版 — ≤50字，适合对方在线时快速发送
+
+规则：
+- 每种话术独立成段
+- 不提学历层级，只说专业方向和能力
+- 简洁版严格控制在50字以内
+- 可根据JD中提到的具体业务或产品来定制`,
+      '请生成三种话术'
+    );
+    resultBox.className = 'result-box';
+    resultBox.innerHTML = renderPitchVariants(output);
+    // Auto-fill save form
+    const se = document.getElementById('savePitch');
+    if (se) se.value = output;
+    showToast('话术生成完成！已自动填充保存表单', 'success');
+  } catch(e) {
+    resultBox.className = 'result-box';
+    resultBox.textContent = '生成失败：' + e.message;
+  }
+}
+
+function renderPitchVariants(text) {
+  const variants = text.split(/###\s*(标准版|热情版|简洁版)/g);
+  let html = '';
+  let currentTitle = '';
+  for (let i = 1; i < variants.length; i += 2) {
+    currentTitle = variants[i];
+    const content = (variants[i+1] || '').trim();
+    html += `<div class="pitch-variant">
+      <h4>${currentTitle} <button class="btn btn-sm btn-outline copy-btn" onclick="copyText(\`${content.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`)">📋 复制</button></h4>
+      <p>${content.replace(/\n/g, '<br>')}</p>
+    </div>`;
+  }
+  return html || '<p>' + text.replace(/\n/g, '<br>') + '</p>';
+}
+
+async function optimizeResume() {
+  const jdId = document.getElementById('resumeJdSelect').value;
+  if (!jdId) { showToast('请先选择一条JD（可先解析后从下拉选"刚解析的JD"）', 'error'); return; }
+  let jdParsed, jdRaw;
+  if (jdId === '_recent') {
+    if (!window._lastParsedJD) { showToast('刚解析的JD已失效，请重新解析', 'error'); return; }
+    jdParsed = window._lastParsedJD.parsed; jdRaw = window._lastParsedJD.raw || '';
+  } else {
+    const app = await db.applications.get(parseInt(jdId));
+    if (!app) { showToast('未找到该JD记录', 'error'); return; }
+    jdParsed = app.jdParsed || app.jdRaw; jdRaw = app.jdRaw || '';
+  }
+  const resume = document.getElementById('resumeInput').value.trim();
+  if (!resume) { showToast('请先粘贴简历，或在API设置中保存通用简历', 'error'); return; }
+
+  const resultBox = document.getElementById('resumeResult');
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box loading';
+  resultBox.textContent = '分析匹配度中...';
+  try {
+    const output = await callDeepSeek(
+      `你是一个简历优化顾问。根据以下JD要求，分析用户简历的匹配度，并给出优化建议。
+
+## JD要求
+${jdParsed || jdRaw || '无JD信息'}
+
+## 用户当前简历
+${resume}
+
+请严格按以下格式输出：
+
+### 匹配度评分
+（一个0-100的数字）
+
+### 匹配分析
+（简历中哪些点符合JD，哪些缺失，≤3句话）
+
+### 需要强调的经历
+（已有但需要放大的内容，用-列表）
+
+### 需要补充的内容
+（JD要求但简历缺失的，用-列表，如没有则写"无"）
+
+### 优化后的简历文本
+（基于原简历改写，只调整与JD相关的表达和侧重点，保留原有格式结构。不改学历信息，不编造经历。）`,
+      '请分析并优化'
+    );
+    resultBox.className = 'result-box';
+    resultBox.innerHTML = renderResumeResult(output);
+    // Extract match rate
+    const rateMatch = output.match(/匹配度评分\s*\n.*?(\d+)/i);
+    const rate = rateMatch ? parseInt(rateMatch[1]) : null;
+    // Auto-fill
+    const se = document.getElementById('saveTailoredResume');
+    const me = document.getElementById('saveMatchRate');
+    if (se) {
+      const optResume = output.match(/###\s*优化后的简历文本\s*\n([\s\S]+)/i);
+      if (optResume) se.value = optResume[1].trim();
+    }
+    if (me && rate !== null) me.value = rate;
+    showToast('简历优化完成！已自动填充保存表单', 'success');
+  } catch(e) {
+    resultBox.className = 'result-box';
+    resultBox.textContent = '优化失败：' + e.message;
+  }
+}
+
+function renderResumeResult(text) {
+  let html = text;
+  // Highlight match score
+  html = html.replace(/###\s*匹配度评分\s*\n(\d+)/, (_, score) => {
+    const s = parseInt(score);
+    const color = s >= 70 ? 'var(--accent)' : s >= 40 ? 'var(--warning)' : 'var(--danger)';
+    return `<div class="match-score" style="color:${color}">${s}/100</div><h4>匹配度评分</h4>`;
+  });
+  html = html.replace(/###\s*(.+)/g, '<h4>$1</h4>');
+  html = html.replace(/\n- (.+)/g, '\n• $1');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+// ============ Save Application ============
+async function saveApplication(status = 'saved') {
+  const company = document.getElementById('saveCompany').value.trim();
+  const position = document.getElementById('savePosition').value.trim();
+  if (!company || !position) { showToast('公司名称和岗位名称不能为空', 'error'); return; }
+
+  const app = {
+    company, position,
+    jdRaw: document.getElementById('saveJdRaw').value,
+    jdParsed: document.getElementById('saveJdParsed').value,
+    pitch: document.getElementById('savePitch').value,
+    tailoredResume: document.getElementById('saveTailoredResume').value,
+    matchRate: parseInt(document.getElementById('saveMatchRate').value) || null,
+    status: status,
+    channel: document.getElementById('saveChannel').value,
+    dateCreated: new Date().toISOString(),
+    dateApplied: status === 'applied' ? new Date().toISOString() : null,
+    dateUpdated: new Date().toISOString(),
+    notes: ''
+  };
+  await db.applications.add(app);
+  showToast(`✅ 已保存：${company} — ${position}（${STATUS_LABELS[status]}）`, 'success');
+  // Clear form
+  ['saveCompany','savePosition','saveJdRaw','saveJdParsed','savePitch','saveTailoredResume','saveMatchRate'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  window._lastParsedJD = null;
+  updateBottomBar();
+}
+
+// ============ Kanban ============
+async function renderKanban(container) {
+  const apps = await db.applications.toArray();
+  const statusApps = {};
+  STATUSES.forEach(s => statusApps[s] = apps.filter(a => a.status === s));
+
+  container.innerHTML = `
+    <div style="margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" onclick="openNewFromKanban()">➕ 手动添加</button>
+      <span style="font-size:12px;color:var(--muted);margin-left:12px">拖拽卡片切换状态</span>
+    </div>
+    <div class="kanban" id="kanbanBoard">
+      ${STATUSES.map(s => `
+        <div class="kanban-col" data-status="${s}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <h4>${STATUS_LABELS[s]} <span>${statusApps[s].length}</span></h4>
+          <div class="kanban-cards" data-status="${s}">
+            ${statusApps[s].map(a => `
+              <div class="kanban-card" draggable="true" data-id="${a.id}" ondragstart="handleDragStart(event)" onclick="openDetail(${a.id})">
+                <div class="kc-company">${a.company}</div>
+                <div class="kc-position">${a.position}</div>
+                <div class="kc-date">${formatDate(a.dateCreated)} · ${a.channel || ''}</div>
+                <div class="kc-actions">
+                  <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openDetail(${a.id})">详情</button>
+                  <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteApp(${a.id})">删除</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function openNewFromKanban() {
+  renderView('new-job');
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelector('[data-view="new-job"]').classList.add('active');
+  // Go to save tab
+  setTimeout(() => {
+    const tabs = document.querySelectorAll('#mainContent .tab');
+    const contents = document.querySelectorAll('#mainContent .tab-content');
+    tabs.forEach(t => t.classList.remove('active'));
+    contents.forEach(c => c.classList.remove('active'));
+    const saveTab = document.querySelector('#mainContent .tab[data-tab="save"]');
+    const saveContent = document.getElementById('tab-save');
+    if (saveTab) saveTab.classList.add('active');
+    if (saveContent) saveContent.classList.add('active');
+  }, 100);
+}
+
+// Drag & Drop
+function handleDragStart(e) {
+  e.target.classList.add('dragging');
+  e.dataTransfer.setData('text/plain', e.target.dataset.id);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+async function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = parseInt(e.dataTransfer.getData('text/plain'));
+  const newStatus = e.currentTarget.dataset.status;
+  await db.applications.update(id, {
+    status: newStatus,
+    dateUpdated: new Date().toISOString(),
+    dateApplied: newStatus === 'applied' ? new Date().toISOString() : undefined
+  });
+  document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+  renderView('kanban');
+  updateBottomBar();
+  showToast('状态已更新 → ' + STATUS_LABELS[newStatus], 'success');
+}
+
+// ============ Detail Modal ============
+async function openDetail(id) {
+  const app = await db.applications.get(id);
+  if (!app) return;
+  const modal = document.getElementById('detailModal');
+  const content = document.getElementById('detailContent');
+  content.innerHTML = `
+    <button class="modal-close" onclick="closeDetail()">&times;</button>
+    <h3>${app.company} — ${app.position}</h3>
+    <div style="margin-bottom:16px">
+      <span class="status-badge ${app.status}">${STATUS_LABELS[app.status]}</span>
+      <span style="margin-left:8px;color:var(--muted);font-size:13px">${app.channel || ''} · ${formatDate(app.dateCreated)}</span>
+      ${app.matchRate ? `<span style="margin-left:8px;font-weight:600;color:var(--primary)">匹配度 ${app.matchRate}/100</span>` : ''}
+    </div>
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab active" data-dtab="summary">概览</div>
+      <div class="tab" data-dtab="jd">JD原文</div>
+      <div class="tab" data-dtab="parsed">AI解析</div>
+      <div class="tab" data-dtab="pitch">话术</div>
+      <div class="tab" data-dtab="resume">简历优化</div>
+    </div>
+    <div id="detail-tab-content">
+      <div class="detail-tab active" id="dt-summary">
+        <h4>📋 笔记</h4>
+        <textarea id="detailNotes" style="min-height:100px">${app.notes || ''}</textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm" onclick="saveNotes(${app.id})">💾 保存笔记</button>
+          <select id="detailStatus" style="width:auto">
+            ${STATUSES.map(s => `<option value="${s}" ${s===app.status?'selected':''}>${STATUS_LABELS[s]}</option>`).join('')}
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="changeStatus(${app.id})">更新状态</button>
+        </div>
+      </div>
+      <div class="detail-tab" id="dt-jd" style="display:none"><pre style="white-space:pre-wrap;font-size:13px"></pre></div>
+      <div class="detail-tab" id="dt-parsed" style="display:none"><pre style="white-space:pre-wrap;font-size:13px"></pre></div>
+      <div class="detail-tab" id="dt-pitch" style="display:none"><pre style="white-space:pre-wrap;font-size:13px"></pre></div>
+      <div class="detail-tab" id="dt-resume" style="display:none"><pre style="white-space:pre-wrap;font-size:13px"></pre></div>
+    </div>
+  `;
+  // 安全填充详情内容（避免模板字符串特殊字符乱码）
+  document.getElementById('dt-jd').querySelector('pre').textContent = app.jdRaw || '无';
+  document.getElementById('dt-parsed').querySelector('pre').textContent = app.jdParsed || '无';
+  document.getElementById('dt-pitch').querySelector('pre').textContent = app.pitch || '无';
+  document.getElementById('dt-resume').querySelector('pre').textContent = app.tailoredResume || '无';
+  // Init detail tabs
+  content.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', function() {
+      const tabName = this.dataset.dtab;
+      content.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      content.querySelectorAll('.detail-tab').forEach(x => { x.style.display = 'none'; });
+      this.classList.add('active');
+      const dt = document.getElementById('dt-'+tabName);
+      if (dt) dt.style.display = 'block';
+    });
+  });
+  modal.classList.add('show');
+}
+
+function closeDetail() { document.getElementById('detailModal').classList.remove('show'); }
+async function saveNotes(id) {
+  const notes = document.getElementById('detailNotes').value;
+  await db.applications.update(id, { notes, dateUpdated: new Date().toISOString() });
+  showToast('笔记已保存', 'success');
+}
+async function changeStatus(id) {
+  const status = document.getElementById('detailStatus').value;
+  await db.applications.update(id, {
+    status,
+    dateUpdated: new Date().toISOString(),
+    dateApplied: status === 'applied' ? new Date().toISOString() : undefined
+  });
+  showToast('状态已更新 → ' + STATUS_LABELS[status], 'success');
+  closeDetail();
+  if (currentView === 'kanban') renderView('kanban');
+  updateBottomBar();
+}
+async function deleteApp(id) {
+  if (!confirm('确定删除这条记录？')) return;
+  await db.applications.delete(id);
+  showToast('已删除', 'success');
+  if (currentView === 'kanban') renderView('kanban');
+  if (currentView === 'dashboard') renderView('dashboard');
+  updateBottomBar();
+}
+
+// ============ Analytics ============
+async function renderAnalytics(container) {
+  const apps = await db.applications.toArray();
+  const stats = calcStats(apps);
+
+  // Channel distribution
+  const channelCount = {};
+  apps.forEach(a => {
+    const c = a.channel || '未知';
+    channelCount[c] = (channelCount[c] || 0) + 1;
+  });
+
+  // Weekly trend (last 4 weeks)
+  const weeks = [];
+  for (let i = 3; i >= 0; i--) {
+    const end = new Date(Date.now() - i*7*24*60*60*1000);
+    const start = new Date(end - 7*24*60*60*1000);
+    const count = apps.filter(a => a.dateCreated && new Date(a.dateCreated) >= start && new Date(a.dateCreated) < end).length;
+    weeks.push({ label: `${start.getMonth()+1}/${start.getDate()}`, count });
+  }
+
+  // Status distribution
+  const statusCount = {};
+  STATUSES.forEach(s => statusCount[s] = apps.filter(a => a.status === s).length);
+
+  container.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">总投递</div><div class="value">${stats.total}</div></div>
+      <div class="stat-card"><div class="label">已读率</div><div class="value">${stats.viewRate}%</div><div class="sub">${stats.viewed} / ${stats.applied}</div></div>
+      <div class="stat-card"><div class="label">回复率</div><div class="value">${stats.replyRate}%</div></div>
+      <div class="stat-card"><div class="label">面试转化</div><div class="value">${stats.interview}</div></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h3>📊 每周投递趋势</h3>
+        <canvas id="weeklyChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>🥧 投递渠道分布</h3>
+        <canvas id="channelChart" height="200"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📋 状态分布</h3>
+      <canvas id="statusChart" height="80"></canvas>
+    </div>
+  `;
+
+  // Render charts
+  setTimeout(() => {
+    const ctx1 = document.getElementById('weeklyChart');
+    if (ctx1) new Chart(ctx1, {
+      type: 'bar',
+      data: { labels: weeks.map(w=>w.label), datasets: [{ label: '投递数', data: weeks.map(w=>w.count), backgroundColor: '#4f46e5', borderRadius: 6 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+    const ctx2 = document.getElementById('channelChart');
+    if (ctx2 && Object.keys(channelCount).length > 0) new Chart(ctx2, {
+      type: 'doughnut',
+      data: { labels: Object.keys(channelCount), datasets: [{ data: Object.values(channelCount), backgroundColor: ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4'] }] },
+      options: { responsive: true }
+    });
+    const ctx3 = document.getElementById('statusChart');
+    if (ctx3) new Chart(ctx3, {
+      type: 'bar',
+      data: { labels: STATUSES.map(s=>STATUS_LABELS[s]), datasets: [{ label: '数量', data: STATUSES.map(s=>statusCount[s]||0), backgroundColor: ['#9ca3af','#3b82f6','#f59e0b','#10b981','#8b5cf6','#10b981','#ef4444'] }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, indexAxis: 'y' }
+    });
+  }, 200);
+}
+
+// ============ Settings ============
+function openSettings() { document.getElementById('settingsModal').classList.add('show'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+async function saveSettings() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const resume = document.getElementById('resumeTemplate').value.trim();
+  const visionModel = document.getElementById('visionModelSelect').value;
+  const qwenApiKey = document.getElementById('qwenApiKeyInput').value.trim();
+  if (apiKey) { await db.settings.put({ key: 'apiKey', value: apiKey }); updateApiStatus(true); }
+  if (resume) await db.settings.put({ key: 'resume', value: resume });
+  if (visionModel) { await db.settings.put({ key: 'visionModel', value: visionModel }); }
+  if (qwenApiKey) { await db.settings.put({ key: 'qwenApiKey', value: qwenApiKey }); }
+  showToast('✅ 设置已保存', 'success');
+  closeSettings();
+}
+
+// ============ Utils ============
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function markdownToHtml(md) {
+  return md
+    .replace(/### (.+)/g, '<h4>$1</h4>')
+    .replace(/## (.+)/g, '<h3>$1</h3>')
+    .replace(/\n- (.+)/g, '\n• $1')
+    .replace(/\n/g, '<br>');
+}
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success'));
+}
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show ' + (type || '');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// Close modals on overlay click
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('show');
+  }
+});
+
+// ============ Offer Comparison ============
+function renderOfferCompare(container) {
+  var h = '';
+  h += '<div class="card"><h3>⚖️ Offer对比器</h3><p style="color:var(--muted);margin-bottom:16px">拿到多个Offer不知道怎么选？填好两边信息，AI帮你分析</p>';
+  h += '<div class="two-col">';
+  h += '<div><h4 style="margin-bottom:12px">🅰️ Offer A</h4>';
+  h += '<div class="form-group"><label>公司名称</label><input type="text" id="offerACompany" placeholder="如：字节跳动"></div>';
+  h += '<div class="form-group"><label>薪资</label><input type="text" id="offerASalary" placeholder="如：15K×14薪"></div>';
+  h += '<div class="form-group"><label>福利亮点</label><textarea id="offerABenefits" style="min-height:50px" placeholder="五险一金/房补/期权..."></textarea></div>';
+  h += '<div class="form-group"><label>通勤</label><input type="text" id="offerACommute" placeholder="如：地铁30分钟"></div>';
+  h += '<div class="form-group"><label>其它备注</label><textarea id="offerANotes" style="min-height:40px" placeholder="发展空间/团队氛围..."></textarea></div>';
+  h += '</div>';
+  h += '<div><h4 style="margin-bottom:12px">🅱️ Offer B</h4>';
+  h += '<div class="form-group"><label>公司名称</label><input type="text" id="offerBCompany" placeholder="如：腾讯"></div>';
+  h += '<div class="form-group"><label>薪资</label><input type="text" id="offerBSalary" placeholder="如：12K×16薪"></div>';
+  h += '<div class="form-group"><label>福利亮点</label><textarea id="offerBBenefits" style="min-height:50px" placeholder="五险一金/房补/期权..."></textarea></div>';
+  h += '<div class="form-group"><label>通勤</label><input type="text" id="offerBCommute" placeholder="如：地铁45分钟"></div>';
+  h += '<div class="form-group"><label>其它备注</label><textarea id="offerBNotes" style="min-height:40px" placeholder="发展空间/团队氛围..."></textarea></div>';
+  h += '</div></div>';
+  h += '<div class="btn-group"><button class="btn btn-primary" onclick="compareOffers()">⚖️ AI分析对比</button><button class="btn btn-outline" onclick="clearOfferCompare()">清空</button></div>';
+  h += '<div class="result-box" id="offerResult" style="display:none;margin-top:16px"></div></div>';
+  container.innerHTML = h;
+}
+
+async function compareOffers() {
+  var a = document.getElementById('offerACompany').value.trim();
+  var b = document.getElementById('offerBCompany').value.trim();
+  if (!a || !b) { showToast('请至少填写两家公司的名称', 'error'); return; }
+  var box = document.getElementById('offerResult');
+  box.style.display = 'block'; box.className = 'result-box loading'; box.textContent = 'AI分析中...';
+  try {
+    var output = await callDeepSeek(
+      '你是一个职业规划顾问。请对比分析两份Offer。
+
+## 规则
+- 从薪资、福利、通勤、发展空间等维度逐项对比
+- 指出各自优劣
+- 给出综合建议
+- 信息不足的维度标注出来
+- 用Markdown格式输出，含对比表格',
+      '## Offer A
+公司：' + a + '
+薪资：' + document.getElementById('offerASalary').value + '
+福利：' + document.getElementById('offerABenefits').value + '
+通勤：' + document.getElementById('offerACommute').value + '
+备注：' + document.getElementById('offerANotes').value + '
+
+## Offer B
+公司：' + b + '
+薪资：' + document.getElementById('offerBSalary').value + '
+福利：' + document.getElementById('offerBBenefits').value + '
+通勤：' + document.getElementById('offerBCommute').value + '
+备注：' + document.getElementById('offerBNotes').value
+    );
+    box.className = 'result-box';
+    box.innerHTML = '<h4 style="margin-top:0">⚖️ 对比分析</h4>' + markdownToHtml(output);
+  } catch(e) { box.className = 'result-box'; box.textContent = '分析失败：' + e.message; }
+}
+
+function clearOfferCompare() {
+  ['offerACompany','offerASalary','offerABenefits','offerACommute','offerANotes','offerBCompany','offerBSalary','offerBBenefits','offerBCommute','offerBNotes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var box=document.getElementById('offerResult');if(box)box.style.display='none';
+}
+
 </script>
 </body>
 </html>
