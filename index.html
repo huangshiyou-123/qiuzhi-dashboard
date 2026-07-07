@@ -266,10 +266,7 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
     <li class="nav-item" data-view="kanban">
       <span class="nav-icon">📋</span> 状态看板
     </li>
-    <li class="nav-item" data-view="offer-compare">
-	      <span class="nav-icon">⚖️</span> Offer对比
-	    </li>
-	    <li class="nav-item" data-view="analytics">
+    <li class="nav-item" data-view="analytics">
       <span class="nav-icon">📈</span> 数据面板
     </li>
   </ul>
@@ -402,7 +399,6 @@ function renderView(view) {
     case 'new-job': renderNewJob(content); break;
     case 'kanban': renderKanban(content); break;
     case 'analytics': renderAnalytics(content); break;
-		case 'offer-compare': renderOfferCompare(content); break;
   }
   updateBottomBar();
 }
@@ -468,7 +464,6 @@ function renderNewJob(container) {
       <div class="tab active" data-tab="parse">🔍 JD解析</div>
       <div class="tab" data-tab="pitch">💬 生成话术</div>
       <div class="tab" data-tab="resume">📝 优化简历</div>
-      <div class="tab" data-tab="interview">🎯 面试备战</div>
       <div class="tab" data-tab="save">💾 保存记录</div>
     </div>
     <div class="tab-content active" id="tab-parse">
@@ -518,22 +513,6 @@ function renderNewJob(container) {
         <div class="result-box" id="resumeResult" style="display:none"></div>
       </div>
     </div>
-        <div class="tab-content" id="tab-interview">
-          <div class="card">
-            <h3>🎯 面试备战 — 基于JD生成面试问题</h3>
-            <div class="form-group"><label>选择JD</label><div style="display:flex;gap:8px"><select id="interviewJdSelect" style="flex:1"><option value="">— 请先在JD解析中保存一条 —</option></select><button class="btn btn-danger btn-sm" onclick="deleteSelectedJD('interview')">🗑️</button></div></div>
-            <label>面试类型</label>
-            <div class="btn-group" id="intvTypeBtns">
-              <button class="btn btn-outline btn-sm active" onclick="setInterviewType('all',this)">📋 全部</button>
-              <button class="btn btn-outline btn-sm" onclick="setInterviewType('self',this)">👤 自我介绍</button>
-              <button class="btn btn-outline btn-sm" onclick="setInterviewType('tech',this)">🔧 技术问题</button>
-              <button class="btn btn-outline btn-sm" onclick="setInterviewType('behavior',this)">💬 行为面试</button>
-              <button class="btn btn-outline btn-sm" onclick="setInterviewType('ask',this)">❓ 反问面试官</button>
-            </div>
-            <div class="btn-group" style="margin-top:12px"><button class="btn btn-primary" onclick="generateInterview()">🎯 生成面试问题</button></div>
-            <div class="result-box" id="interviewResult" style="display:none"></div>
-          </div>
-        </div>
     <div class="tab-content" id="tab-save">
       <div class="card">
         <h3>💾 保存到看板</h3>
@@ -566,7 +545,7 @@ function renderNewJob(container) {
     this.classList.add('active');
     document.getElementById('tab-'+tabName).classList.add('active');
     currentTab = tabName;
-    if (tabName === 'pitch' || tabName === 'resume' || tabName === 'interview') refreshJdSelects();
+    if (tabName === 'pitch' || tabName === 'resume') refreshJdSelects();
     if (tabName === 'resume') loadResumeForOptimize();
   }));
   // 恢复之前上传的截图预览（跨页面导航不丢失）
@@ -584,10 +563,8 @@ async function refreshJdSelects() {
   }
   const sel1 = document.getElementById('pitchJdSelect');
   const sel2 = document.getElementById('resumeJdSelect');
-  const sel3 = document.getElementById('interviewJdSelect');
   if (sel1) sel1.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
   if (sel2) sel2.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
-  if (sel3) sel3.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
 }
 function extractField(text, fieldName) {
   const m = text.match(new RegExp('##\\s*' + fieldName + '\\s*\\n(.+)'));
@@ -595,7 +572,7 @@ function extractField(text, fieldName) {
 }
 
 async function deleteSelectedJD(type) {
-  const selId = type === 'interview' ? 'interviewJdSelect' : (type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect');
+  const selId = type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect';
   const jdId = document.getElementById(selId).value;
   if (!jdId || jdId === '_recent') { showToast('请选择一条已保存的JD才能删除', 'error'); return; }
   if (!confirm('确定删除这条JD记录？删除后不可恢复。')) return;
@@ -866,44 +843,6 @@ function fillSaveForm(parsedText, rawJD) {
   if (jpe) jpe.value = parsedText || '';
 }
 
-let interviewType = 'all';
-function setInterviewType(type, btn) {
-  interviewType = type;
-  document.querySelectorAll('#intvTypeBtns .btn').forEach(function(b) { b.classList.remove('active'); });
-  btn.classList.add('active');
-}
-async function generateInterview() {
-  var jdId = document.getElementById('interviewJdSelect').value;
-  if (!jdId) { showToast('请先选择一条JD', 'error'); return; }
-  var parsed;
-  if (jdId === '_recent') {
-    if (!window._lastParsedJD) { showToast('刚解析的JD已失效，请重新解析', 'error'); return; }
-    parsed = window._lastParsedJD.parsed;
-  } else {
-    var app = await db.applications.get(parseInt(jdId));
-    parsed = app.jdParsed || app.jdRaw;
-  }
-  var box = document.getElementById('interviewResult');
-  box.style.display = 'block'; box.className = 'result-box loading'; box.textContent = 'AI生成面试题中...';
-  var resumeSetting = await db.settings.get('resume');
-  var resume = resumeSetting ? resumeSetting.value : '';
-  var prompts = {};
-  prompts['all'] = '请为该岗位生成全套面试准备：1.自我介绍模板(30秒/1分钟/2分钟三个版本) 2.技术/专业问题(5-8题附参考答案) 3.行为面试题(3-5题，用STAR方法提示思路) 4.反问面试官(2-3个) 5.场景题(1-2题)';
-  prompts['self'] = '请生成针对该岗位的自我介绍模板，包括30秒、1分钟、2分钟三个版本。结合JD要求和候选人简历定制，突出匹配度。';
-  prompts['tech'] = '请基于该JD的硬技能要求，生成5-8个专业面试问题，每题附参考答案。';
-  prompts['behavior'] = '请基于该岗位特点，生成3-5个行为面试题(参考STAR方法)。每题说明考察意图和答题思路。';
-  prompts['ask'] = '请生成3-4个反问面试官的问题，要体现对公司和岗位做了功课，有思考深度。';
-  var prompt = prompts[interviewType] || prompts['all'];
-  try {
-    var output = await callDeepSeek(
-      '你是一个资深面试教练。\n\n## 目标JD\n' + parsed + '\n\n## 候选人简历\n' + (resume || '（未提供）'),
-      prompt
-    );
-    box.className = 'result-box';
-    box.innerHTML = '<h4 style="margin-top:0">🎯 面试备战方案</h4>' + markdownToHtml(output);
-  } catch(e) { box.className = 'result-box'; box.textContent = '生成失败：' + e.message; }
-}
-async function generatePitch() {
 async function generatePitch() {
   const jdId = document.getElementById('pitchJdSelect').value;
   if (!jdId) { showToast('请先选择一条JD（可先解析后从下拉选"刚解析的JD"）', 'error'); return; }
@@ -1366,49 +1305,6 @@ document.addEventListener('click', e => {
     e.target.classList.remove('show');
   }
 });
-
-// ============ Offer Comparison ============
-function renderOfferCompare(container) {
-  var h = '<div class="card"><h3>⚖️ Offer对比器</h3><p style="color:var(--muted);margin-bottom:16px">拿到多个Offer不知道怎么选？填好两边信息，AI帮你分析</p>';
-  h += '<div class="two-col">';
-  h += '<div><h4 style="margin-bottom:12px">🅰️ Offer A</h4>';
-  h += '<div class="form-group"><label>公司名称</label><input type="text" id="offerACompany" placeholder="如：字节跳动"></div>';
-  h += '<div class="form-group"><label>薪资</label><input type="text" id="offerASalary" placeholder="如：15K×14薪"></div>';
-  h += '<div class="form-group"><label>福利亮点</label><textarea id="offerABenefits" style="min-height:50px" placeholder="五险一金/房补/期权..."></textarea></div>';
-  h += '<div class="form-group"><label>通勤</label><input type="text" id="offerACommute" placeholder="如：地铁30分钟"></div>';
-  h += '<div class="form-group"><label>其它备注</label><textarea id="offerANotes" style="min-height:40px" placeholder="发展空间/团队氛围..."></textarea></div></div>';
-  h += '<div><h4 style="margin-bottom:12px">🅱️ Offer B</h4>';
-  h += '<div class="form-group"><label>公司名称</label><input type="text" id="offerBCompany" placeholder="如：腾讯"></div>';
-  h += '<div class="form-group"><label>薪资</label><input type="text" id="offerBSalary" placeholder="如：12K×16薪"></div>';
-  h += '<div class="form-group"><label>福利亮点</label><textarea id="offerBBenefits" style="min-height:50px" placeholder="五险一金/房补/期权..."></textarea></div>';
-  h += '<div class="form-group"><label>通勤</label><input type="text" id="offerBCommute" placeholder="如：地铁45分钟"></div>';
-  h += '<div class="form-group"><label>其它备注</label><textarea id="offerBNotes" style="min-height:40px" placeholder="发展空间/团队氛围..."></textarea></div></div></div>';
-  h += '<div class="btn-group"><button class="btn btn-primary" onclick="compareOffers()">⚖️ AI分析对比</button><button class="btn btn-outline" onclick="clearOfferCompare()">清空</button></div>';
-  h += '<div class="result-box" id="offerResult" style="display:none;margin-top:16px"></div></div>';
-  container.innerHTML = h;
-}
-
-async function compareOffers() {
-  var a = document.getElementById('offerACompany').value.trim();
-  var b = document.getElementById('offerBCompany').value.trim();
-  if (!a || !b) { showToast('请至少填写两家公司的名称', 'error'); return; }
-  var box = document.getElementById('offerResult');
-  box.style.display = 'block'; box.className = 'result-box loading'; box.textContent = 'AI分析中...';
-  try {
-    var output = await callDeepSeek(
-      '你是一个职业规划顾问。请对比分析两份Offer。\n\n## 规则\n- 从薪资、福利、通勤、发展空间等维度逐项对比\n- 指出各自优劣\n- 给出综合建议\n- 信息不足的维度标注出来\n- 用Markdown格式输出，含对比表格',
-      '## Offer A\n公司：' + a + '\n薪资：' + document.getElementById('offerASalary').value + '\n福利：' + document.getElementById('offerABenefits').value + '\n通勤：' + document.getElementById('offerACommute').value + '\n备注：' + document.getElementById('offerANotes').value + '\n\n## Offer B\n公司：' + b + '\n薪资：' + document.getElementById('offerBSalary').value + '\n福利：' + document.getElementById('offerBBenefits').value + '\n通勤：' + document.getElementById('offerBCommute').value + '\n备注：' + document.getElementById('offerBNotes').value
-    );
-    box.className = 'result-box';
-    box.innerHTML = '<h4 style="margin-top:0">⚖️ 对比分析</h4>' + markdownToHtml(output);
-  } catch(e) { box.className = 'result-box'; box.textContent = '分析失败：' + e.message; }
-}
-
-function clearOfferCompare() {
-  ['offerACompany','offerASalary','offerABenefits','offerACommute','offerANotes','offerBCompany','offerBSalary','offerBBenefits','offerBCommute','offerBNotes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var box=document.getElementById('offerResult');if(box)box.style.display='none';
-}
-
 </script>
 </body>
 </html>
