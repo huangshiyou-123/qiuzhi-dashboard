@@ -1349,6 +1349,19 @@ function showToast(msg, type) {
   setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
+// 文本框滚动到头后页面跟随滚动
+document.addEventListener('wheel', function(e) {
+  var el = e.target;
+  if (el.tagName !== 'TEXTAREA') return;
+  var atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+  var atTop = el.scrollTop <= 0;
+  if ((e.deltaY > 0 && atBottom) || (e.deltaY < 0 && atTop)) {
+    e.preventDefault();
+    var content = document.querySelector('.content');
+    if (content) content.scrollTop += e.deltaY;
+  }
+}, { passive: false });
+
 // Close modals on overlay click
 document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-overlay')) {
