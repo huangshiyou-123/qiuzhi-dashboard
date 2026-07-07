@@ -1172,4 +1172,1495 @@ document.addEventListener('click', e => {
 });
 </script>
 </body>
+</html>	<style>
+	@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+	* { margin: 0; padding: 0; box-sizing: border-box; }
+
+	:root {
+	  --bg: #f8fafc;
+	  --card: #ffffff;
+	  --text: #0f172a;
+	  --muted: #64748b;
+	  --primary: #6366f1;
+	  --primary-light: #eef2ff;
+	  --primary-hover: #4f46e5;
+	  --accent: #10b981;
+	  --border: #e2e8f0;
+	  --sidebar-bg: #0f172a;
+	  --sidebar-hover: rgba(99,102,241,.12);
+	  --sidebar-text: #94a3b8;
+	  --danger: #ef4444;
+	  --warning: #f59e0b;
+	  --info: #3b82f6;
+	  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+	  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+	  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+	  --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+	  --radius: 10px;
+	  --radius-sm: 6px;
+	  --transition: .2s cubic-bezier(.4,0,.2,1);
+	}
+
+	body {
+	  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	  background: var(--bg);
+	  color: var(--text);
+	  display: flex;
+	  min-height: 100vh;
+	  -webkit-font-smoothing: antialiased;
+	}
+
+	.sidebar {
+	  width: 240px;
+	  background: var(--sidebar-bg);
+	  color: #fff;
+	  display: flex;
+	  flex-direction: column;
+	  position: fixed;
+	  top: 0; left: 0; bottom: 0;
+	  z-index: 10;
+	  border-right: 1px solid rgba(255,255,255,.06);
+	}
+	.sidebar-header {
+	  padding: 28px 24px 20px;
+	  border-bottom: 1px solid rgba(255,255,255,.08);
+	}
+	.sidebar-header h1 {
+	  font-size: 20px; font-weight: 700;
+	  background: linear-gradient(135deg, #818cf8, #c084fc);
+	  -webkit-background-clip: text;
+	  -webkit-text-fill-color: transparent;
+	  background-clip: text;
+	}
+	.sidebar-header p {
+	  font-size: 12px; color: var(--sidebar-text);
+	  margin-top: 4px; letter-spacing: .5px;
+	}
+	.nav-list { list-style: none; padding: 16px 0; flex: 1; }
+	.nav-item {
+	  padding: 11px 24px; cursor: pointer;
+	  display: flex; align-items: center; gap: 12px;
+	  font-size: 14px; font-weight: 500;
+	  color: var(--sidebar-text);
+	  transition: all var(--transition);
+	  border-left: 3px solid transparent;
+	  margin: 2px 0;
+	}
+	.nav-item:hover {
+	  background: var(--sidebar-hover);
+	  color: #e2e8f0;
+	}
+	.nav-item.active {
+	  background: rgba(99,102,241,.15);
+	  color: #fff;
+	  border-left-color: #818cf8;
+	  font-weight: 600;
+	}
+	.nav-icon { font-size: 18px; width: 26px; text-align: center; opacity: .85; }
+	.nav-item.active .nav-icon { opacity: 1; }
+	.sidebar-footer {
+	  padding: 16px 24px;
+	  border-top: 1px solid rgba(255,255,255,.08);
+	}
+	.sidebar-footer button {
+	  width: 100%; padding: 10px;
+	  border: 1px solid rgba(255,255,255,.15);
+	  background: rgba(255,255,255,.04);
+	  color: var(--sidebar-text);
+	  border-radius: var(--radius-sm);
+	  cursor: pointer; font-size: 13px; font-weight: 500;
+	  transition: all var(--transition);
+	}
+	.sidebar-footer button:hover {
+	  background: rgba(255,255,255,.08);
+	  color: #fff;
+	  border-color: rgba(255,255,255,.25);
+	}
+
+	.main {
+	  margin-left: 240px;
+	  flex: 1;
+	  display: flex;
+	  flex-direction: column;
+	  min-height: 100vh;
+	}
+	.top-bar {
+	  background: var(--card);
+	  padding: 18px 36px;
+	  border-bottom: 1px solid var(--border);
+	  display: flex;
+	  justify-content: space-between;
+	  align-items: center;
+	}
+	.top-bar h2 {
+	  font-size: 22px; font-weight: 700;
+	  letter-spacing: -.3px;
+	}
+	.top-bar-right { display: flex; align-items: center; gap: 16px; }
+	.api-status {
+	  display: flex; align-items: center; gap: 8px;
+	  font-size: 12px; font-weight: 500;
+	  padding: 8px 14px;
+	  border-radius: 24px;
+	  background: #ecfdf5; color: #065f46;
+	}
+	.api-status.off { background: #fef2f2; color: #991b1b; }
+	.api-dot {
+	  width: 7px; height: 7px;
+	  border-radius: 50%;
+	  background: #10b981;
+	  box-shadow: 0 0 0 3px rgba(16,185,129,.2);
+	}
+	.api-dot.off {
+	  background: #ef4444;
+	  box-shadow: 0 0 0 3px rgba(239,68,68,.2);
+	}
+	.content { padding: 28px 36px; flex: 1; overflow-y: auto; }
+
+	.bottom-bar {
+	  background: var(--card);
+	  padding: 14px 36px;
+	  border-top: 1px solid var(--border);
+	  display: flex; gap: 36px;
+	  font-size: 13px; font-weight: 500; color: var(--muted);
+	}
+	.bottom-bar strong {
+	  color: var(--text); font-size: 16px; font-weight: 700;
+	}
+
+	.view { display: none; }
+	.view.active { display: block; animation: fadeIn .25s ease; }
+	@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+	.card {
+	  background: var(--card);
+	  border-radius: var(--radius);
+	  padding: 28px;
+	  box-shadow: var(--shadow);
+	  margin-bottom: 20px;
+	  border: 1px solid var(--border);
+	  transition: box-shadow var(--transition);
+	}
+	.card:hover { box-shadow: var(--shadow-md); }
+	.card h3 {
+	  font-size: 16px; font-weight: 700;
+	  margin-bottom: 18px; color: var(--text);
+	  letter-spacing: -.2px;
+	}
+
+	.stats-grid {
+	  display: grid;
+	  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	  gap: 16px;
+	  margin-bottom: 28px;
+	}
+	.stat-card {
+	  background: var(--card);
+	  border-radius: var(--radius);
+	  padding: 22px 24px;
+	  box-shadow: var(--shadow);
+	  border: 1px solid var(--border);
+	  position: relative;
+	  overflow: hidden;
+	  transition: all var(--transition);
+	}
+	.stat-card::before {
+	  content: '';
+	  position: absolute;
+	  top: 0; left: 0;
+	  width: 4px; height: 100%;
+	  background: var(--primary);
+	  border-radius: 0 4px 4px 0;
+	}
+	.stat-card:nth-child(2)::before { background: var(--info); }
+	.stat-card:nth-child(3)::before { background: var(--accent); }
+	.stat-card:nth-child(4)::before { background: var(--warning); }
+	.stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+	.stat-card .label {
+	  font-size: 11px; font-weight: 600;
+	  color: var(--muted); margin-bottom: 6px;
+	  text-transform: uppercase; letter-spacing: .8px;
+	}
+	.stat-card .value {
+	  font-size: 32px; font-weight: 800;
+	  color: var(--text); letter-spacing: -1px;
+	}
+	.stat-card .sub {
+	  font-size: 12px; color: var(--muted);
+	  margin-top: 4px; font-weight: 500;
+	}
+
+	textarea, input[type="text"], input[type="password"], select {
+	  width: 100%;
+	  padding: 12px 14px;
+	  border: 1.5px solid var(--border);
+	  border-radius: var(--radius-sm);
+	  font-size: 14px; font-family: inherit;
+	  resize: vertical;
+	  transition: all var(--transition);
+	  background: #fafbfc;
+	  color: var(--text);
+	}
+	textarea:focus, input:focus {
+	  outline: none;
+	  border-color: var(--primary);
+	  box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+	  background: #fff;
+	}
+	textarea { min-height: 160px; line-height: 1.6; }
+	label {
+	  display: block;
+	  font-size: 13px; font-weight: 600;
+	  margin-bottom: 6px; color: var(--text);
+	}
+	.form-group { margin-bottom: 18px; }
+
+	.btn {
+	  padding: 10px 22px; border: none;
+	  border-radius: var(--radius-sm);
+	  font-size: 14px; font-weight: 600;
+	  font-family: inherit;
+	  cursor: pointer;
+	  transition: all var(--transition);
+	  letter-spacing: -.1px;
+	}
+	.btn-primary {
+	  background: var(--primary); color: #fff;
+	  box-shadow: 0 1px 3px rgba(99,102,241,.3);
+	}
+	.btn-primary:hover {
+	  background: var(--primary-hover);
+	  box-shadow: 0 4px 12px rgba(99,102,241,.35);
+	  transform: translateY(-1px);
+	}
+	.btn-primary:disabled {
+	  opacity: .45; cursor: not-allowed;
+	  transform: none; box-shadow: none;
+	}
+	.btn-outline {
+	  background: #fff; border: 1.5px solid var(--border);
+	  color: var(--text);
+	}
+	.btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+	.btn-sm { padding: 6px 14px; font-size: 12px; }
+	.btn-accent {
+	  background: var(--accent); color: #fff;
+	  box-shadow: 0 1px 3px rgba(16,185,129,.3);
+	}
+	.btn-accent:hover { opacity: .9; transform: translateY(-1px); }
+	.btn-danger { background: var(--danger); color: #fff; }
+	.btn-danger:hover { opacity: .9; }
+	.btn-group { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+	.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+	@media (max-width: 960px) { .two-col { grid-template-columns: 1fr; } }
+
+	.result-box {
+	  background: #fafbfc;
+	  border: 1px solid var(--border);
+	  border-radius: var(--radius);
+	  padding: 20px;
+	  min-height: 60px;
+	  white-space: pre-wrap;
+	  font-size: 14px;
+	  line-height: 1.7;
+	  margin-top: 10px;
+	}
+	.result-box.loading { color: var(--muted); font-style: italic; }
+	.result-box .match-score {
+	  font-size: 42px; font-weight: 800;
+	  color: var(--primary); letter-spacing: -1px;
+	}
+	.result-box h4 { font-size: 14px; margin: 14px 0 8px; color: var(--text); font-weight: 700; }
+
+	.pitch-variant {
+	  margin-bottom: 18px; padding-bottom: 18px;
+	  border-bottom: 1px solid var(--border);
+	}
+	.pitch-variant:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+	.pitch-variant h4 { color: var(--primary); font-size: 14px; font-weight: 700; }
+	.copy-btn { float: right; font-size: 12px; }
+
+	.kanban {
+	  display: flex; gap: 14px;
+	  overflow-x: auto;
+	  padding-bottom: 20px;
+	  min-height: 420px;
+	  align-items: flex-start;
+	}
+	.kanban-col {
+	  flex: 1; min-width: 185px;
+	  background: #f1f5f9;
+	  border-radius: var(--radius);
+	  padding: 14px;
+	  border: 1px solid var(--border);
+	}
+	.kanban-col h4 {
+	  font-size: 13px; font-weight: 700;
+	  color: var(--text); margin-bottom: 10px;
+	  display: flex; justify-content: space-between;
+	  align-items: center;
+	}
+	.kanban-col h4 span {
+	  background: var(--card);
+	  border-radius: 12px;
+	  padding: 3px 10px;
+	  font-size: 11px; font-weight: 600;
+	  color: var(--muted);
+	  box-shadow: var(--shadow-sm);
+	}
+	.kanban-cards { min-height: 60px; }
+	.kanban-card {
+	  background: var(--card);
+	  border-radius: var(--radius-sm);
+	  padding: 14px;
+	  margin-bottom: 8px;
+	  box-shadow: var(--shadow-sm);
+	  cursor: grab;
+	  font-size: 13px;
+	  border-left: 3px solid var(--primary);
+	  transition: all var(--transition);
+	}
+	.kanban-card:hover { box-shadow: var(--shadow); }
+	.kanban-card:active { cursor: grabbing; }
+	.kanban-card.dragging { opacity: .4; transform: rotate(2deg); }
+	.kanban-card .kc-company { font-weight: 700; margin-bottom: 3px; font-size: 14px; }
+	.kanban-card .kc-position { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+	.kanban-card .kc-date { color: var(--muted); font-size: 11px; }
+	.kanban-col.drag-over { background: var(--primary-light); border-color: var(--primary); }
+	.kanban-card .kc-actions { margin-top: 10px; display: flex; gap: 6px; }
+
+	.modal-overlay {
+	  display: none;
+	  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+	  background: rgba(15,23,42,.5);
+	  backdrop-filter: blur(4px);
+	  z-index: 100;
+	  align-items: center; justify-content: center;
+	}
+	.modal-overlay.show { display: flex; }
+	.modal {
+	  background: var(--card);
+	  border-radius: 14px;
+	  padding: 36px;
+	  max-width: 720px;
+	  width: 92%;
+	  max-height: 82vh;
+	  overflow-y: auto;
+	  box-shadow: var(--shadow-lg);
+	  animation: modalIn .25s ease;
+	}
+	@keyframes modalIn { from { opacity: 0; transform: scale(.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+	.modal h3 { margin-bottom: 22px; font-size: 20px; font-weight: 700; }
+	.modal-close {
+	  float: right; background: none; border: none;
+	  font-size: 26px; cursor: pointer;
+	  color: var(--muted);
+	  transition: color var(--transition);
+	}
+	.modal-close:hover { color: var(--text); }
+
+	.settings-section { margin-bottom: 26px; }
+	.settings-section h4 { margin-bottom: 10px; font-size: 15px; font-weight: 700; }
+
+	.empty-state {
+	  text-align: center;
+	  padding: 60px 24px;
+	  color: var(--muted);
+	}
+	.empty-state .icon { font-size: 52px; margin-bottom: 14px; }
+
+	.tabs {
+	  display: flex; gap: 0;
+	  border-bottom: 2px solid var(--border);
+	  margin-bottom: 22px;
+	}
+	.tab {
+	  padding: 11px 22px; cursor: pointer;
+	  font-size: 14px; font-weight: 500;
+	  color: var(--muted);
+	  border-bottom: 2px solid transparent;
+	  margin-bottom: -2px;
+	  transition: all var(--transition);
+	}
+	.tab:hover { color: var(--text); }
+	.tab.active {
+	  color: var(--primary);
+	  border-bottom-color: var(--primary);
+	  font-weight: 700;
+	}
+	.tab-content { display: none; }
+	.tab-content.active { display: block; animation: fadeIn .2s ease; }
+
+	.toast {
+	  position: fixed; top: 24px; right: 24px;
+	  background: #0f172a; color: #fff;
+	  padding: 14px 22px;
+	  border-radius: 10px;
+	  font-size: 13px; font-weight: 500;
+	  z-index: 200;
+	  animation: slideIn .3s ease;
+	  display: none;
+	  box-shadow: var(--shadow-lg);
+	}
+	.toast.show { display: block; }
+	.toast.success { background: #065f46; }
+	.toast.error { background: #991b1b; }
+	@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+	.status-badge {
+	  display: inline-block;
+	  padding: 3px 10px;
+	  border-radius: 12px;
+	  font-size: 11px; font-weight: 600;
+	}
+	.status-badge.applied { background: #dbeafe; color: #1e40af; }
+	.status-badge.viewed { background: #fef3c7; color: #92400e; }
+	.status-badge.replied { background: #d1fae5; color: #065f46; }
+	.status-badge.interview { background: #ede9fe; color: #5b21b6; }
+	.status-badge.offer { background: #d1fae5; color: #065f46; }
+	.status-badge.rejected { background: #fee2e2; color: #991b1b; }
+	.status-badge.saved { background: #f3f4f6; color: #374151; }
+
+	.resume-section { margin-bottom: 18px; }
+	.resume-section textarea { min-height: 200px; }
+	</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h1>⚔️ 求职作战台</h1>
+    <p>JD解析 · 话术 · 简历 · 追踪</p>
+  </div>
+  <ul class="nav-list">
+    <li class="nav-item active" data-view="dashboard">
+      <span class="nav-icon">📊</span> 仪表盘
+    </li>
+    <li class="nav-item" data-view="new-job">
+      <span class="nav-icon">➕</span> 新增岗位
+    </li>
+    <li class="nav-item" data-view="kanban">
+      <span class="nav-icon">📋</span> 状态看板
+    </li>
+    <li class="nav-item" data-view="analytics">
+      <span class="nav-icon">📈</span> 数据面板
+    </li>
+  </ul>
+  <div class="sidebar-footer">
+    <button onclick="openSettings()">⚙️ API设置</button>
+  </div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <div class="top-bar">
+    <h2 id="viewTitle">仪表盘</h2>
+    <div class="top-bar-right">
+      <span class="api-status off" id="apiStatus">
+        <span class="api-dot off" id="apiDot"></span>
+        <span id="apiStatusText">未配置API Key</span>
+      </span>
+    </div>
+  </div>
+  <div class="content" id="mainContent"></div>
+  <div class="bottom-bar" id="bottomBar">
+    <div>总计：<strong id="statTotal">0</strong> 家</div>
+    <div>已读率：<strong id="statViewRate">—</strong></div>
+    <div>回复率：<strong id="statReplyRate">—</strong></div>
+    <div>面试：<strong id="statInterview">0</strong> 次</div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSettings()">&times;</button>
+    <h3>⚙️ API 设置</h3>
+    <div class="settings-section">
+      <label>DeepSeek API Key <span style="color:#10b981;font-size:11px">（已内置免费Key，也可填自己的）</span></label>
+      <input type="password" id="apiKeyInput" placeholder="留空则使用内置免费Key" style="margin-bottom:8px">
+      <p style="font-size:12px;color:var(--muted)">Key 仅存储在浏览器本地，不上传任何服务器。</p>
+    </div>
+    <div class="settings-section">
+      <label>🔮 截图识别模型（可选）</label>
+      <select id="visionModelSelect" style="margin-bottom:4px">
+        <option value="">不使用截图识别</option>
+        <option value="qwen">通义千问 Qwen-VL-Max（推荐，中文OCR准确）</option>
+      </select>
+      <input type="password" id="qwenApiKeyInput" placeholder="千问 API Key (sk-...)" style="margin-top:8px">
+      <p style="font-size:12px;color:var(--muted)">使用通义千问多模态模型识别JD截图，比本地OCR更准确。不配置则继续用浏览器本地OCR。</p>
+    </div>
+    <div class="settings-section">
+      <h4>📄 我的通用简历</h4>
+      <textarea id="resumeTemplate" placeholder="粘贴你的通用简历文本，后续话术生成和简历优化会自动使用..." style="min-height:200px"></textarea>
+      <p style="font-size:12px;color:var(--muted)">保存后，每次生成话术和优化简历时自动填充。</p>
+    </div>
+    <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" id="detailContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ Database ============
+const db = new Dexie('QiuzhiDashboard');
+db.version(1).stores({
+  applications: '++id, company, position, status, channel, dateCreated, dateApplied',
+  settings: 'key'
+});
+
+// ============ State ============
+let currentView = 'dashboard';
+let currentTab = 'parse';
+
+const VIEW_TITLES = {
+  dashboard: '仪表盘',
+  'new-job': '新增岗位',
+  kanban: '状态看板',
+  analytics: '数据面板'
+};
+const STATUSES = ['saved', 'applied', 'viewed', 'replied', 'interview', 'offer', 'rejected'];
+const STATUS_LABELS = {
+  saved: '📥 待投', applied: '📤 已投', viewed: '👁️ 已读',
+  replied: '💬 已回', interview: '🎙️ 面试', offer: '🎉 Offer', rejected: '❌ 挂断'
+};
+const CHANNELS = ['BOSS直聘', '拉勾', '猎聘', '脉脉', '官网', '内推', '其他'];
+
+// ============ Init ============
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  initNav();
+  renderView('dashboard');
+});
+
+function loadSettings() {
+  db.settings.get('apiKey').then(s => { if (s) { document.getElementById('apiKeyInput').value = s.value; updateApiStatus(true); } });
+  db.settings.get('resume').then(s => { if (s) document.getElementById('resumeTemplate').value = s.value; });
+  db.settings.get('qwenApiKey').then(s => { if (s) document.getElementById('qwenApiKeyInput').value = s.value; });
+  db.settings.get('visionModel').then(s => { if (s) document.getElementById('visionModelSelect').value = s.value; });
+}
+
+function updateApiStatus(hasUserKey) {
+  const el = document.getElementById('apiStatus');
+  const dot = document.getElementById('apiDot');
+  const txt = document.getElementById('apiStatusText');
+  if (hasUserKey) { el.className = 'api-status'; dot.className = 'api-dot'; txt.textContent = 'API 已就绪 (自配)'; }
+  else { el.className = 'api-status'; dot.className = 'api-dot'; txt.textContent = 'API 已就绪 (免费Key)'; }
+}
+
+// ============ Navigation ============
+function initNav() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const v = item.dataset.view;
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      renderView(v);
+    });
+  });
+}
+
+function renderView(view) {
+  currentView = view;
+  document.getElementById('viewTitle').textContent = VIEW_TITLES[view];
+  const content = document.getElementById('mainContent');
+  switch(view) {
+    case 'dashboard': renderDashboard(content); break;
+    case 'new-job': renderNewJob(content); break;
+    case 'kanban': renderKanban(content); break;
+    case 'analytics': renderAnalytics(content); break;
+  }
+  updateBottomBar();
+}
+
+// ============ Dashboard ============
+async function renderDashboard(container) {
+  const apps = await db.applications.toArray();
+  const stats = calcStats(apps);
+  const recent = apps.slice().sort((a,b) => (b.dateCreated || '').localeCompare(a.dateCreated || '')).slice(0, 5);
+
+  container.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">总投递</div><div class="value">${stats.total}</div></div>
+      <div class="stat-card"><div class="label">已读率</div><div class="value">${stats.viewRate}%</div><div class="sub">${stats.viewed} 已读 / ${stats.applied} 已投</div></div>
+      <div class="stat-card"><div class="label">回复率</div><div class="value">${stats.replyRate}%</div><div class="sub">${stats.replied} 回复</div></div>
+      <div class="stat-card"><div class="label">面试邀请</div><div class="value">${stats.interview}</div></div>
+      <div class="stat-card"><div class="label">本周新增</div><div class="value">${stats.thisWeek}</div></div>
+    </div>
+    <div class="card">
+      <h3>📌 最近投递</h3>
+      ${recent.length === 0 ? '<div class="empty-state"><div class="icon">📭</div><p>还没有投递记录，去"新增岗位"开始吧</p></div>' : recent.map(a => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <strong>${a.company || '未知公司'}</strong> — ${a.position || '未知岗位'}
+            <span class="status-badge ${a.status}">${STATUS_LABELS[a.status]}</span>
+          </div>
+          <div style="color:var(--muted);font-size:12px">${formatDate(a.dateCreated)} · ${a.channel || ''}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function calcStats(apps) {
+  const now = new Date();
+  const weekAgo = new Date(now - 7*24*60*60*1000);
+  const total = apps.length;
+  const applied = apps.filter(a => a.status !== 'saved').length;
+  const viewed = apps.filter(a => ['viewed','replied','interview','offer','rejected'].includes(a.status)).length;
+  const replied = apps.filter(a => ['replied','interview','offer'].includes(a.status)).length;
+  const interview = apps.filter(a => ['interview','offer'].includes(a.status)).length;
+  const thisWeek = apps.filter(a => a.dateCreated && new Date(a.dateCreated) >= weekAgo).length;
+  return {
+    total, applied, viewed, replied, interview, thisWeek,
+    viewRate: applied > 0 ? Math.round(viewed/applied*100) : 0,
+    replyRate: applied > 0 ? Math.round(replied/applied*100) : 0
+  };
+}
+
+async function updateBottomBar() {
+  const apps = await db.applications.toArray();
+  const stats = calcStats(apps);
+  document.getElementById('statTotal').textContent = stats.total;
+  document.getElementById('statViewRate').textContent = stats.viewRate + '%';
+  document.getElementById('statReplyRate').textContent = stats.replyRate + '%';
+  document.getElementById('statInterview').textContent = stats.interview;
+}
+
+// ============ New Job (JD解析+话术+简历) ============
+function renderNewJob(container) {
+  container.innerHTML = `
+    <div class="tabs">
+      <div class="tab active" data-tab="parse">🔍 JD解析</div>
+      <div class="tab" data-tab="pitch">💬 生成话术</div>
+      <div class="tab" data-tab="resume">📝 优化简历</div>
+      <div class="tab" data-tab="save">💾 保存记录</div>
+    </div>
+    <div class="tab-content active" id="tab-parse">
+      <div class="card">
+        <h3>📷 上传JD截图 <span style="font-size:12px;color:var(--muted);font-weight:400">— 支持BOSS直聘/拉勾截图，自动识别文字</span></h3>
+        <div id="uploadZone" style="border:2px dashed var(--border);border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:12px"
+             onclick="document.getElementById('jdImageInput').click()"
+             ondragover="event.preventDefault();this.style.borderColor='var(--primary)';this.style.background='#eef2ff'"
+             ondragleave="this.style.borderColor='var(--border)';this.style.background='transparent'"
+             ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='transparent';handleImageDrop(event)">
+          <div style="font-size:36px;margin-bottom:8px">🖼️</div>
+          <div style="font-size:14px;color:var(--text);font-weight:600">点击上传或拖拽截图到这里</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">支持 PNG / JPG / WebP</div>
+          <input type="file" id="jdImageInput" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
+        </div>
+        <div id="imagePreview" style="display:none;margin-bottom:12px;text-align:center">
+          <img id="previewImg" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid var(--border)">
+          <div class="btn-group" style="justify-content:center">
+            <button class="btn btn-primary btn-sm" onclick="parseJDFromImage()">🔍 识别并解析</button>
+            <button class="btn btn-outline btn-sm" onclick="clearImage()">清除图片</button>
+          </div>
+        </div>
+        <div style="text-align:center;color:var(--muted);font-size:13px;margin:12px 0">— 或者 —</div>
+        <h3>📋 直接粘贴JD文本</h3>
+        <textarea id="jdInput" placeholder="从BOSS直聘/拉勾复制完整的招聘JD，粘贴到这里..."></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="parseJD()">🔍 AI解析JD</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('jdInput').value=''">清空</button>
+        </div>
+        <div class="result-box" id="jdResult" style="display:none"></div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-pitch">
+      <div class="card">
+        <h3>💬 生成打招呼话术</h3>
+        <div class="form-group"><label>选择JD（已解析的）</label><div style="display:flex;gap:8px"><select id="pitchJdSelect" style="flex:1"><option value="">— 请先在JD解析中保存一条 —</option></select><button class="btn btn-danger btn-sm" onclick="deleteSelectedJD('pitch')" title="删除选中的JD">🗑️</button></div></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="generatePitch()">生成话术</button></div>
+        <div class="result-box" id="pitchResult" style="display:none"></div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-resume">
+      <div class="card">
+        <h3>📝 简历匹配分析 & 优化</h3>
+        <div class="form-group"><label>选择JD</label><div style="display:flex;gap:8px"><select id="resumeJdSelect" style="flex:1"><option value="">— 请先在JD解析中保存一条 —</option></select><button class="btn btn-danger btn-sm" onclick="deleteSelectedJD('resume')" title="删除选中的JD">🗑️</button></div></div>
+        <div class="form-group"><label>我的简历（使用API设置中保存的通用简历，可在此修改）</label><textarea id="resumeInput"></textarea></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="optimizeResume()">🔬 分析 & 优化</button></div>
+        <div class="result-box" id="resumeResult" style="display:none"></div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-save">
+      <div class="card">
+        <h3>💾 保存到看板</h3>
+        <div class="two-col">
+          <div>
+            <div class="form-group"><label>公司名称</label><input type="text" id="saveCompany" placeholder="如：字节跳动"></div>
+            <div class="form-group"><label>岗位名称</label><input type="text" id="savePosition" placeholder="如：产品实习生"></div>
+            <div class="form-group"><label>投递渠道</label><select id="saveChannel">${CHANNELS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+            <div class="form-group"><label>JD原文</label><textarea id="saveJdRaw" style="min-height:80px"></textarea></div>
+          </div>
+          <div>
+            <div class="form-group"><label>AI解析结果（JSON）</label><textarea id="saveJdParsed" style="min-height:80px;font-size:12px"></textarea></div>
+            <div class="form-group"><label>生成的话术</label><textarea id="savePitch" style="min-height:80px"></textarea></div>
+            <div class="form-group"><label>优化后简历</label><textarea id="saveTailoredResume" style="min-height:80px"></textarea></div>
+            <div class="form-group"><label>匹配度评分</label><input type="text" id="saveMatchRate" placeholder="0-100"></div>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-accent" onclick="saveApplication()">💾 保存（状态：待投）</button>
+          <button class="btn btn-primary" onclick="saveApplication('applied')">📤 保存（状态：已投）</button>
+        </div>
+      </div>
+    </div>
+  `;
+  // Init tabs
+  container.querySelectorAll('.tab').forEach(t => t.addEventListener('click', function() {
+    const tabName = this.dataset.tab;
+    container.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    container.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('tab-'+tabName).classList.add('active');
+    currentTab = tabName;
+    if (tabName === 'pitch' || tabName === 'resume') refreshJdSelects();
+    if (tabName === 'resume') loadResumeForOptimize();
+  }));
+  // 恢复之前上传的截图预览（跨页面导航不丢失）
+  setTimeout(() => restoreImagePreviewUI(), 50);
+}
+
+async function refreshJdSelects() {
+  const apps = await db.applications.toArray();
+  let opts = apps.map(a => `<option value="${a.id}">${a.company} — ${a.position}</option>`).join('');
+  // 如果有刚解析但未保存的JD，也加入下拉
+  if (window._lastParsedJD && window._lastParsedJD.parsed) {
+    const company = extractField(window._lastParsedJD.parsed, '公司名称') || '（刚解析的JD）';
+    const position = extractField(window._lastParsedJD.parsed, '岗位名称') || '未保存';
+    opts = `<option value="_recent" style="color:var(--primary);font-weight:600">⭐ 刚解析的：${company} — ${position}</option>` + opts;
+  }
+  const sel1 = document.getElementById('pitchJdSelect');
+  const sel2 = document.getElementById('resumeJdSelect');
+  if (sel1) sel1.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
+  if (sel2) sel2.innerHTML = '<option value="">— 选择已保存的JD —</option>' + opts;
+}
+function extractField(text, fieldName) {
+  const m = text.match(new RegExp('##\\s*' + fieldName + '\\s*\\n(.+)'));
+  return m ? m[1].trim() : null;
+}
+
+async function deleteSelectedJD(type) {
+  const selId = type === 'pitch' ? 'pitchJdSelect' : 'resumeJdSelect';
+  const jdId = document.getElementById(selId).value;
+  if (!jdId || jdId === '_recent') { showToast('请选择一条已保存的JD才能删除', 'error'); return; }
+  if (!confirm('确定删除这条JD记录？删除后不可恢复。')) return;
+  await db.applications.delete(parseInt(jdId));
+  showToast('已删除', 'success');
+  refreshJdSelects();
+  updateBottomBar();
+}
+
+async function loadResumeForOptimize() {
+  const s = await db.settings.get('resume');
+  const ta = document.getElementById('resumeInput');
+  if (ta && s && !ta.value) ta.value = s.value;
+}
+
+// ============ Image Upload ============
+function handleImageDrop(e) {
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processImageFile(file);
+}
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (file) processImageFile(file);
+}
+function processImageFile(file) {
+  if (file.size > 10 * 1024 * 1024) { showToast('图片不能超过10MB', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    // 存储完整 data URL（包含正确的 MIME 类型）
+    window._jdImageDataUrl = ev.target.result;
+    restoreImagePreviewUI();
+  };
+  reader.readAsDataURL(file);
+}
+function restoreImagePreviewUI() {
+  const preview = document.getElementById('imagePreview');
+  const zone = document.getElementById('uploadZone');
+  const img = document.getElementById('previewImg');
+  if (!preview || !zone || !img) return; // DOM还没渲染好
+  if (window._jdImageDataUrl) {
+    preview.style.display = 'block';
+    img.src = window._jdImageDataUrl;
+    zone.style.display = 'none';
+  }
+}
+function clearImage() {
+  window._jdImageDataUrl = null;
+  const preview = document.getElementById('imagePreview');
+  const zone = document.getElementById('uploadZone');
+  const input = document.getElementById('jdImageInput');
+  if (preview) preview.style.display = 'none';
+  if (zone) zone.style.display = 'block';
+  if (input) input.value = '';
+}
+async function parseJDFromImage() {
+  if (!window._jdImageDataUrl) { showToast('请先上传截图', 'error'); return; }
+  const resultBox = document.getElementById('jdResult');
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box loading';
+
+  // 检查是否配置了千问视觉模型
+  const visionModelSetting = await db.settings.get('visionModel');
+  const qwenKeySetting = await db.settings.get('qwenApiKey');
+
+  let ocrText = '';
+  if (visionModelSetting && visionModelSetting.value === 'qwen' && qwenKeySetting && qwenKeySetting.value) {
+    // 使用通义千问 Qwen-VL
+    resultBox.textContent = '🔮 千问视觉识别中...';
+    try {
+      ocrText = await callQwenVL(qwenKeySetting.value, window._jdImageDataUrl);
+      ocrText = ocrText.trim();
+    } catch(e) {
+      resultBox.textContent = '⚠️ 千问识别失败：' + e.message + '，切换到本地OCR...';
+      ocrText = await runTesseractOCR(resultBox);
+    }
+  } else {
+    // 使用本地 Tesseract OCR
+    ocrText = await runTesseractOCR(resultBox);
+  }
+
+  if (!ocrText || ocrText.length < 10) {
+    resultBox.className = 'result-box';
+    resultBox.textContent = '⚠️ 未能从截图中识别到足够文字。请确认截图清晰、包含文字内容，或改用下方"粘贴JD文本"方式。';
+    return;
+  }
+
+  // Step 2: Parse structured info with DeepSeek
+  resultBox.textContent = '📝 文字识别完成，正在结构化解析...';
+  const output = await callDeepSeek(
+    `你是一个专业的JD解析助手。以下是从招聘JD截图中识别出的文字（可能有OCR识别误差），请提取结构化信息。严格按Markdown格式输出：
+
+## 公司名称
+## 岗位名称
+## 薪资范围（如未提及写"未标注"）
+## 工作地点
+## 核心技能要求（每条用-开头，每条≤15字）
+## 加分项（每条用-开头，如未提及写"无"）
+## 岗位亮点（该岗位最吸引人的1-2个点）
+## 一句话岗位总结
+
+规则：不编造JD中没有的信息。中文输出。`,
+    '以下是从招聘JD截图中识别出的文字内容：\n\n' + ocrText
+  );
+  resultBox.className = 'result-box';
+  resultBox.innerHTML = `
+    <h4 style="margin-top:0">✅ 截图识别 & 解析结果</h4>
+    <details style="margin-bottom:12px;font-size:12px;color:var(--muted)">
+      <summary>📝 原始识别文字（点击展开）</summary>
+      <pre style="white-space:pre-wrap;background:#f9fafb;padding:8px;border-radius:4px;margin-top:4px">${ocrText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+    </details>
+    ${markdownToHtml(output)}
+  `;
+  window._lastParsedJD = { raw: ocrText, parsed: output };
+  fillSaveForm(output, ocrText);
+  showToast('截图识别完成！已自动填充保存表单', 'success');
+}
+
+// Qwen-VL 视觉识别
+async function callQwenVL(apiKey, imageDataUrl) {
+  const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({
+      model: 'qwen-vl-max',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: '请准确识别这张招聘JD截图中的所有文字内容。只输出识别出的完整原文，不要添加任何解释、总结或格式化。' },
+          { type: 'image_url', image_url: { url: imageDataUrl } }
+        ]
+      }],
+      max_tokens: 4096
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || err.message || 'HTTP ' + resp.status);
+  }
+  const data = await resp.json();
+  return data.choices[0].message.content;
+}
+
+// Tesseract.js 本地OCR（fallback）
+async function runTesseractOCR(resultBox) {
+  resultBox.textContent = '🔍 Tesseract 本地OCR识别中...（未配置千问Key，使用浏览器本地识别）';
+  const ocrResult = await Tesseract.recognize(window._jdImageDataUrl, 'chi_sim+eng', {
+    logger: m => {
+      if (m.status === 'recognizing text') {
+        resultBox.textContent = `🔍 本地OCR识别中... ${Math.round(m.progress * 100)}%`;
+      }
+    }
+  });
+  return ocrResult.data.text.trim();
+}
+
+// ============ AI Calls ============
+const DEFAULT_API_KEY = 'sk-qsnkddsgneqatkphrizufgngdpavbmggxojjzaujbduttaov';
+const DEFAULT_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+const DEFAULT_MODEL = 'deepseek-ai/DeepSeek-V3';
+
+async function callDeepSeek(systemPrompt, userContent, imageDataUrl = null) {
+  const apiKeySetting = await db.settings.get('apiKey');
+  const hasUserKey = apiKeySetting && apiKeySetting.value;
+  const apiKey = hasUserKey ? apiKeySetting.value : DEFAULT_API_KEY;
+  const apiUrl = hasUserKey ? 'https://api.deepseek.com/v1/chat/completions' : DEFAULT_API_URL;
+  const model = hasUserKey ? 'deepseek-chat' : DEFAULT_MODEL;
+
+  let messages = [{ role: 'system', content: systemPrompt }];
+  if (imageDataUrl) {
+    messages.push({
+      role: 'user',
+      content: [
+        { type: 'text', text: userContent },
+        { type: 'image_url', image_url: { url: imageDataUrl } }
+      ]
+    });
+  } else {
+    messages.push({ role: 'user', content: userContent });
+  }
+  const resp = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({
+      model: model,
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 4096
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    showToast('API错误: ' + (err.error?.message || resp.status), 'error');
+    throw new Error('API error');
+  }
+  const data = await resp.json();
+  return data.choices[0].message.content;
+}
+
+async function parseJD() {
+  const jd = document.getElementById('jdInput').value.trim();
+  if (!jd) { showToast('请先粘贴JD内容', 'error'); return; }
+  const resultBox = document.getElementById('jdResult');
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box loading';
+  resultBox.textContent = 'AI解析中...';
+  try {
+    const output = await callDeepSeek(
+      `你是一个专业的JD解析助手。用户会粘贴一条招聘JD，请提取以下结构化信息。严格按Markdown格式输出，不要添加额外解释。
+
+## 公司名称
+## 岗位名称
+## 薪资范围（如未提及写"未标注"）
+## 工作地点
+## 核心技能要求（每条用-开头，每条≤15字）
+## 加分项（每条用-开头，如未提及写"无"）
+## 岗位亮点（该岗位最吸引人的1-2个点）
+## 一句话岗位总结
+
+规则：不编造JD中没有的信息。中文输出。`,
+      jd
+    );
+    resultBox.className = 'result-box';
+    resultBox.innerHTML = `<h4 style="margin-top:0">✅ 解析结果</h4>` + markdownToHtml(output);
+    // Store for later use
+    window._lastParsedJD = { raw: jd, parsed: output };
+    // Auto-fill save form
+    fillSaveForm(output, jd);
+    showToast('JD解析完成！已自动填充保存表单', 'success');
+  } catch(e) {
+    resultBox.className = 'result-box';
+    resultBox.textContent = '解析失败：' + e.message;
+  }
+}
+
+function fillSaveForm(parsedText, rawJD) {
+  const company = extractField(parsedText, '公司名称');
+  const position = extractField(parsedText, '岗位名称');
+  const ce = document.getElementById('saveCompany');
+  const pe = document.getElementById('savePosition');
+  const je = document.getElementById('saveJdRaw');
+  const jpe = document.getElementById('saveJdParsed');
+  if (ce && company) ce.value = company;
+  if (pe && position) pe.value = position;
+  if (je) je.value = rawJD || '';
+  if (jpe) jpe.value = parsedText || '';
+}
+
+async function generatePitch() {
+  const jdId = document.getElementById('pitchJdSelect').value;
+  if (!jdId) { showToast('请先选择一条JD（可先解析后从下拉选"刚解析的JD"）', 'error'); return; }
+  let jdParsed, jdRaw;
+  if (jdId === '_recent') {
+    if (!window._lastParsedJD) { showToast('刚解析的JD已失效，请重新解析', 'error'); return; }
+    jdParsed = window._lastParsedJD.parsed; jdRaw = window._lastParsedJD.raw || '';
+  } else {
+    const app = await db.applications.get(parseInt(jdId));
+    if (!app) { showToast('未找到该JD记录', 'error'); return; }
+    jdParsed = app.jdParsed || app.jdRaw; jdRaw = app.jdRaw || '';
+  }
+  const resumeSetting = await db.settings.get('resume');
+  const resume = resumeSetting ? resumeSetting.value : '应届生，计算机网络专业，有AI产品设计经验';
+
+  const resultBox = document.getElementById('pitchResult');
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box loading';
+  resultBox.textContent = '生成话术中...';
+  try {
+    const output = await callDeepSeek(
+      `你是一个求职话术助手。根据以下JD和用户背景，生成BOSS直聘打招呼话术。
+
+## JD信息
+${jdParsed || jdRaw || '无JD信息'}
+
+## 用户背景
+${resume}
+
+生成三种语气版本，严格用"### 标准版"、"### 热情版"、"### 简洁版"作为分隔：
+
+### 标准版 — 专业得体，适合大多数情况
+### 热情版 — 展现对该公司的了解和兴趣
+### 简洁版 — ≤50字，适合对方在线时快速发送
+
+规则：
+- 每种话术独立成段
+- 不提学历层级，只说专业方向和能力
+- 简洁版严格控制在50字以内
+- 可根据JD中提到的具体业务或产品来定制`,
+      '请生成三种话术'
+    );
+    resultBox.className = 'result-box';
+    resultBox.innerHTML = renderPitchVariants(output);
+    // Auto-fill save form
+    const se = document.getElementById('savePitch');
+    if (se) se.value = output;
+    showToast('话术生成完成！已自动填充保存表单', 'success');
+  } catch(e) {
+    resultBox.className = 'result-box';
+    resultBox.textContent = '生成失败：' + e.message;
+  }
+}
+
+function renderPitchVariants(text) {
+  const variants = text.split(/###\s*(标准版|热情版|简洁版)/g);
+  let html = '';
+  let currentTitle = '';
+  for (let i = 1; i < variants.length; i += 2) {
+    currentTitle = variants[i];
+    const content = (variants[i+1] || '').trim();
+    html += `<div class="pitch-variant">
+      <h4>${currentTitle} <button class="btn btn-sm btn-outline copy-btn" onclick="copyText(\`${content.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`)">📋 复制</button></h4>
+      <p>${content.replace(/\n/g, '<br>')}</p>
+    </div>`;
+  }
+  return html || '<p>' + text.replace(/\n/g, '<br>') + '</p>';
+}
+
+async function optimizeResume() {
+  const jdId = document.getElementById('resumeJdSelect').value;
+  if (!jdId) { showToast('请先选择一条JD（可先解析后从下拉选"刚解析的JD"）', 'error'); return; }
+  let jdParsed, jdRaw;
+  if (jdId === '_recent') {
+    if (!window._lastParsedJD) { showToast('刚解析的JD已失效，请重新解析', 'error'); return; }
+    jdParsed = window._lastParsedJD.parsed; jdRaw = window._lastParsedJD.raw || '';
+  } else {
+    const app = await db.applications.get(parseInt(jdId));
+    if (!app) { showToast('未找到该JD记录', 'error'); return; }
+    jdParsed = app.jdParsed || app.jdRaw; jdRaw = app.jdRaw || '';
+  }
+  const resume = document.getElementById('resumeInput').value.trim();
+  if (!resume) { showToast('请先粘贴简历，或在API设置中保存通用简历', 'error'); return; }
+
+  const resultBox = document.getElementById('resumeResult');
+  resultBox.style.display = 'block';
+  resultBox.className = 'result-box loading';
+  resultBox.textContent = '分析匹配度中...';
+  try {
+    const output = await callDeepSeek(
+      `你是一个简历优化顾问。根据以下JD要求，分析用户简历的匹配度，并给出优化建议。
+
+## JD要求
+${jdParsed || jdRaw || '无JD信息'}
+
+## 用户当前简历
+${resume}
+
+请严格按以下格式输出：
+
+### 匹配度评分
+（一个0-100的数字）
+
+### 匹配分析
+（简历中哪些点符合JD，哪些缺失，≤3句话）
+
+### 需要强调的经历
+（已有但需要放大的内容，用-列表）
+
+### 需要补充的内容
+（JD要求但简历缺失的，用-列表，如没有则写"无"）
+
+### 优化后的简历文本
+（基于原简历改写，只调整与JD相关的表达和侧重点，保留原有格式结构。不改学历信息，不编造经历。）`,
+      '请分析并优化'
+    );
+    resultBox.className = 'result-box';
+    resultBox.innerHTML = renderResumeResult(output);
+    // Extract match rate
+    const rateMatch = output.match(/匹配度评分\s*\n.*?(\d+)/i);
+    const rate = rateMatch ? parseInt(rateMatch[1]) : null;
+    // Auto-fill
+    const se = document.getElementById('saveTailoredResume');
+    const me = document.getElementById('saveMatchRate');
+    if (se) {
+      const optResume = output.match(/###\s*优化后的简历文本\s*\n([\s\S]+)/i);
+      if (optResume) se.value = optResume[1].trim();
+    }
+    if (me && rate !== null) me.value = rate;
+    showToast('简历优化完成！已自动填充保存表单', 'success');
+  } catch(e) {
+    resultBox.className = 'result-box';
+    resultBox.textContent = '优化失败：' + e.message;
+  }
+}
+
+function renderResumeResult(text) {
+  let html = text;
+  // Highlight match score
+  html = html.replace(/###\s*匹配度评分\s*\n(\d+)/, (_, score) => {
+    const s = parseInt(score);
+    const color = s >= 70 ? 'var(--accent)' : s >= 40 ? 'var(--warning)' : 'var(--danger)';
+    return `<div class="match-score" style="color:${color}">${s}/100</div><h4>匹配度评分</h4>`;
+  });
+  html = html.replace(/###\s*(.+)/g, '<h4>$1</h4>');
+  html = html.replace(/\n- (.+)/g, '\n• $1');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+// ============ Save Application ============
+async function saveApplication(status = 'saved') {
+  const company = document.getElementById('saveCompany').value.trim();
+  const position = document.getElementById('savePosition').value.trim();
+  if (!company || !position) { showToast('公司名称和岗位名称不能为空', 'error'); return; }
+
+  const app = {
+    company, position,
+    jdRaw: document.getElementById('saveJdRaw').value,
+    jdParsed: document.getElementById('saveJdParsed').value,
+    pitch: document.getElementById('savePitch').value,
+    tailoredResume: document.getElementById('saveTailoredResume').value,
+    matchRate: parseInt(document.getElementById('saveMatchRate').value) || null,
+    status: status,
+    channel: document.getElementById('saveChannel').value,
+    dateCreated: new Date().toISOString(),
+    dateApplied: status === 'applied' ? new Date().toISOString() : null,
+    dateUpdated: new Date().toISOString(),
+    notes: ''
+  };
+  await db.applications.add(app);
+  showToast(`✅ 已保存：${company} — ${position}（${STATUS_LABELS[status]}）`, 'success');
+  // Clear form
+  ['saveCompany','savePosition','saveJdRaw','saveJdParsed','savePitch','saveTailoredResume','saveMatchRate'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  window._lastParsedJD = null;
+  updateBottomBar();
+}
+
+// ============ Kanban ============
+async function renderKanban(container) {
+  const apps = await db.applications.toArray();
+  const statusApps = {};
+  STATUSES.forEach(s => statusApps[s] = apps.filter(a => a.status === s));
+
+  container.innerHTML = `
+    <div style="margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" onclick="openNewFromKanban()">➕ 手动添加</button>
+      <span style="font-size:12px;color:var(--muted);margin-left:12px">拖拽卡片切换状态</span>
+    </div>
+    <div class="kanban" id="kanbanBoard">
+      ${STATUSES.map(s => `
+        <div class="kanban-col" data-status="${s}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <h4>${STATUS_LABELS[s]} <span>${statusApps[s].length}</span></h4>
+          <div class="kanban-cards" data-status="${s}">
+            ${statusApps[s].map(a => `
+              <div class="kanban-card" draggable="true" data-id="${a.id}" ondragstart="handleDragStart(event)" onclick="openDetail(${a.id})">
+                <div class="kc-company">${a.company}</div>
+                <div class="kc-position">${a.position}</div>
+                <div class="kc-date">${formatDate(a.dateCreated)} · ${a.channel || ''}</div>
+                <div class="kc-actions">
+                  <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openDetail(${a.id})">详情</button>
+                  <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteApp(${a.id})">删除</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function openNewFromKanban() {
+  renderView('new-job');
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelector('[data-view="new-job"]').classList.add('active');
+  // Go to save tab
+  setTimeout(() => {
+    const tabs = document.querySelectorAll('#mainContent .tab');
+    const contents = document.querySelectorAll('#mainContent .tab-content');
+    tabs.forEach(t => t.classList.remove('active'));
+    contents.forEach(c => c.classList.remove('active'));
+    const saveTab = document.querySelector('#mainContent .tab[data-tab="save"]');
+    const saveContent = document.getElementById('tab-save');
+    if (saveTab) saveTab.classList.add('active');
+    if (saveContent) saveContent.classList.add('active');
+  }, 100);
+}
+
+// Drag & Drop
+function handleDragStart(e) {
+  e.target.classList.add('dragging');
+  e.dataTransfer.setData('text/plain', e.target.dataset.id);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+async function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = parseInt(e.dataTransfer.getData('text/plain'));
+  const newStatus = e.currentTarget.dataset.status;
+  await db.applications.update(id, {
+    status: newStatus,
+    dateUpdated: new Date().toISOString(),
+    dateApplied: newStatus === 'applied' ? new Date().toISOString() : undefined
+  });
+  document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+  renderView('kanban');
+  updateBottomBar();
+  showToast('状态已更新 → ' + STATUS_LABELS[newStatus], 'success');
+}
+
+// ============ Detail Modal ============
+async function openDetail(id) {
+  const app = await db.applications.get(id);
+  if (!app) return;
+  const modal = document.getElementById('detailModal');
+  const content = document.getElementById('detailContent');
+  content.innerHTML = `
+    <button class="modal-close" onclick="closeDetail()">&times;</button>
+    <h3>${app.company} — ${app.position}</h3>
+    <div style="margin-bottom:16px">
+      <span class="status-badge ${app.status}">${STATUS_LABELS[app.status]}</span>
+      <span style="margin-left:8px;color:var(--muted);font-size:13px">${app.channel || ''} · ${formatDate(app.dateCreated)}</span>
+      ${app.matchRate ? `<span style="margin-left:8px;font-weight:600;color:var(--primary)">匹配度 ${app.matchRate}/100</span>` : ''}
+    </div>
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab active" data-dtab="summary">概览</div>
+      <div class="tab" data-dtab="jd">JD原文</div>
+      <div class="tab" data-dtab="parsed">AI解析</div>
+      <div class="tab" data-dtab="pitch">话术</div>
+      <div class="tab" data-dtab="resume">简历优化</div>
+    </div>
+    <div id="detail-tab-content">
+      <div class="detail-tab active" id="dt-summary">
+        <h4>📋 笔记</h4>
+        <textarea id="detailNotes" style="min-height:100px">${app.notes || ''}</textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm" onclick="saveNotes(${app.id})">💾 保存笔记</button>
+          <select id="detailStatus" style="width:auto">
+            ${STATUSES.map(s => `<option value="${s}" ${s===app.status?'selected':''}>${STATUS_LABELS[s]}</option>`).join('')}
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="changeStatus(${app.id})">更新状态</button>
+        </div>
+      </div>
+      <div class="detail-tab" id="dt-jd" style="display:none"><pre style="white-space:pre-wrap;font-size:13px"></pre></div>
+      <div class="detail-tab" id="dt-parsed" style="display:none"><pre style="white-space:pre-wrap;font-size:13px"></pre></div>
+      <div class="detail-tab" id="dt-pitch" style="display:none"><pre style="white-space:pre-wrap;font-size:13px"></pre></div>
+      <div class="detail-tab" id="dt-resume" style="display:none"><pre style="white-space:pre-wrap;font-size:13px"></pre></div>
+    </div>
+  `;
+  // 安全填充详情内容（避免模板字符串特殊字符乱码）
+  document.getElementById('dt-jd').querySelector('pre').textContent = app.jdRaw || '无';
+  document.getElementById('dt-parsed').querySelector('pre').textContent = app.jdParsed || '无';
+  document.getElementById('dt-pitch').querySelector('pre').textContent = app.pitch || '无';
+  document.getElementById('dt-resume').querySelector('pre').textContent = app.tailoredResume || '无';
+  // Init detail tabs
+  content.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', function() {
+      const tabName = this.dataset.dtab;
+      content.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      content.querySelectorAll('.detail-tab').forEach(x => { x.style.display = 'none'; });
+      this.classList.add('active');
+      const dt = document.getElementById('dt-'+tabName);
+      if (dt) dt.style.display = 'block';
+    });
+  });
+  modal.classList.add('show');
+}
+
+function closeDetail() { document.getElementById('detailModal').classList.remove('show'); }
+async function saveNotes(id) {
+  const notes = document.getElementById('detailNotes').value;
+  await db.applications.update(id, { notes, dateUpdated: new Date().toISOString() });
+  showToast('笔记已保存', 'success');
+}
+async function changeStatus(id) {
+  const status = document.getElementById('detailStatus').value;
+  await db.applications.update(id, {
+    status,
+    dateUpdated: new Date().toISOString(),
+    dateApplied: status === 'applied' ? new Date().toISOString() : undefined
+  });
+  showToast('状态已更新 → ' + STATUS_LABELS[status], 'success');
+  closeDetail();
+  if (currentView === 'kanban') renderView('kanban');
+  updateBottomBar();
+}
+async function deleteApp(id) {
+  if (!confirm('确定删除这条记录？')) return;
+  await db.applications.delete(id);
+  showToast('已删除', 'success');
+  if (currentView === 'kanban') renderView('kanban');
+  if (currentView === 'dashboard') renderView('dashboard');
+  updateBottomBar();
+}
+
+// ============ Analytics ============
+async function renderAnalytics(container) {
+  const apps = await db.applications.toArray();
+  const stats = calcStats(apps);
+
+  // Channel distribution
+  const channelCount = {};
+  apps.forEach(a => {
+    const c = a.channel || '未知';
+    channelCount[c] = (channelCount[c] || 0) + 1;
+  });
+
+  // Weekly trend (last 4 weeks)
+  const weeks = [];
+  for (let i = 3; i >= 0; i--) {
+    const end = new Date(Date.now() - i*7*24*60*60*1000);
+    const start = new Date(end - 7*24*60*60*1000);
+    const count = apps.filter(a => a.dateCreated && new Date(a.dateCreated) >= start && new Date(a.dateCreated) < end).length;
+    weeks.push({ label: `${start.getMonth()+1}/${start.getDate()}`, count });
+  }
+
+  // Status distribution
+  const statusCount = {};
+  STATUSES.forEach(s => statusCount[s] = apps.filter(a => a.status === s).length);
+
+  container.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">总投递</div><div class="value">${stats.total}</div></div>
+      <div class="stat-card"><div class="label">已读率</div><div class="value">${stats.viewRate}%</div><div class="sub">${stats.viewed} / ${stats.applied}</div></div>
+      <div class="stat-card"><div class="label">回复率</div><div class="value">${stats.replyRate}%</div></div>
+      <div class="stat-card"><div class="label">面试转化</div><div class="value">${stats.interview}</div></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h3>📊 每周投递趋势</h3>
+        <canvas id="weeklyChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>🥧 投递渠道分布</h3>
+        <canvas id="channelChart" height="200"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📋 状态分布</h3>
+      <canvas id="statusChart" height="80"></canvas>
+    </div>
+  `;
+
+  // Render charts
+  setTimeout(() => {
+    const ctx1 = document.getElementById('weeklyChart');
+    if (ctx1) new Chart(ctx1, {
+      type: 'bar',
+      data: { labels: weeks.map(w=>w.label), datasets: [{ label: '投递数', data: weeks.map(w=>w.count), backgroundColor: '#4f46e5', borderRadius: 6 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+    const ctx2 = document.getElementById('channelChart');
+    if (ctx2 && Object.keys(channelCount).length > 0) new Chart(ctx2, {
+      type: 'doughnut',
+      data: { labels: Object.keys(channelCount), datasets: [{ data: Object.values(channelCount), backgroundColor: ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4'] }] },
+      options: { responsive: true }
+    });
+    const ctx3 = document.getElementById('statusChart');
+    if (ctx3) new Chart(ctx3, {
+      type: 'bar',
+      data: { labels: STATUSES.map(s=>STATUS_LABELS[s]), datasets: [{ label: '数量', data: STATUSES.map(s=>statusCount[s]||0), backgroundColor: ['#9ca3af','#3b82f6','#f59e0b','#10b981','#8b5cf6','#10b981','#ef4444'] }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, indexAxis: 'y' }
+    });
+  }, 200);
+}
+
+// ============ Settings ============
+function openSettings() { document.getElementById('settingsModal').classList.add('show'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+async function saveSettings() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const resume = document.getElementById('resumeTemplate').value.trim();
+  const visionModel = document.getElementById('visionModelSelect').value;
+  const qwenApiKey = document.getElementById('qwenApiKeyInput').value.trim();
+  if (apiKey) { await db.settings.put({ key: 'apiKey', value: apiKey }); updateApiStatus(true); }
+  if (resume) await db.settings.put({ key: 'resume', value: resume });
+  if (visionModel) { await db.settings.put({ key: 'visionModel', value: visionModel }); }
+  if (qwenApiKey) { await db.settings.put({ key: 'qwenApiKey', value: qwenApiKey }); }
+  showToast('✅ 设置已保存', 'success');
+  closeSettings();
+}
+
+// ============ Utils ============
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function markdownToHtml(md) {
+  return md
+    .replace(/### (.+)/g, '<h4>$1</h4>')
+    .replace(/## (.+)/g, '<h3>$1</h3>')
+    .replace(/\n- (.+)/g, '\n• $1')
+    .replace(/\n/g, '<br>');
+}
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success'));
+}
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show ' + (type || '');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// Close modals on overlay click
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('show');
+  }
+});
+</script>
+</body>
 </html>
