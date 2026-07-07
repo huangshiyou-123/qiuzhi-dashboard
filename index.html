@@ -1311,18 +1311,27 @@ function formatDate(iso) {
 }
 function markdownToHtml(md) {
   var h = md;
+  // Bold
   h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  // Italic
+  h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // List items
   h = h.replace(/^[\*\-\•]\s/gm, '• ');
+  // Headings
   h = h.replace(/^### (.+)$/gm, '<h4 style="margin:16px 0 8px">$1</h4>');
   h = h.replace(/^## (.+)$/gm, '<h3 style="margin:20px 0 10px;color:var(--primary)">$1</h3>');
   h = h.replace(/^# (.+)$/gm, '<h2 style="margin:24px 0 12px">$1</h2>');
+  // Dash lists
   h = h.replace(/^- (.+)$/gm, '<li style="margin:4px 0;line-height:1.7">$1</li>');
-  h = h.replace(/((?:<li[^>]*>.*?<\/li>\n?)+)/g, '<ul style="padding-left:20px;margin:8px 0">$1</ul>');
-  h = h.replace(/\*\*/g, '');
-  h = h.replace(/^\* /gm, '• ');
+  h = h.replace(/((?:<li[^>]*>.*?<\/li>\s*)+)/g, '<ul style="padding-left:20px;margin:8px 0">$1</ul>');
+  // Strip ALL remaining asterisks
+  h = h.replace(/\*/g, '');
+  // Paragraphs
   h = h.replace(/\n\n/g, '</p><p style="margin:12px 0;line-height:1.8">');
   h = h.replace(/\n/g, '<br>');
   h = '<p style="margin:8px 0;line-height:1.8">' + h + '</p>';
+  // Cleanup
   h = h.replace(/<p[^>]*><\/p>/g, '');
   h = h.replace(/<li([^>]*)><br>/g, '<li$1>');
   return h;
