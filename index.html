@@ -168,8 +168,9 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
 
 .result-box {
   background: #fafbfc; border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 20px; min-height: 60px; white-space: pre-wrap;
-  font-size: 14px; line-height: 1.7; margin-top: 10px;
+  padding: 24px; min-height: 60px; white-space: normal;
+  font-size: 14px; line-height: 1.9; margin-top: 10px;
+  width: 100%; word-wrap: break-word;
 }
 .result-box.loading { color: var(--muted); font-style: italic; }
 .result-box .match-score { font-size: 42px; font-weight: 800; color: var(--primary); letter-spacing: -1px; }
@@ -248,6 +249,12 @@ label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; c
 
 .resume-section { margin-bottom: 18px; }
 .resume-section textarea { min-height: 200px; }
+.resume-section-header {
+  display: block; background: var(--primary-light); color: var(--primary);
+  padding: 10px 16px; border-radius: var(--radius-sm); margin: 20px 0 12px;
+  font-size: 15px; font-weight: 700; letter-spacing: .5px;
+  border-left: 4px solid var(--primary);
+}
 
 </style>
 </head>
@@ -1008,19 +1015,32 @@ ${resume}
 }
 
 function renderResumeResult(text) {
-  let html = text;
-  // Highlight match score
-  html = html.replace(/###\s*匹配度评分\s*\n(\d+)/, (_, score) => {
-    const s = parseInt(score);
-    const color = s >= 70 ? 'var(--accent)' : s >= 40 ? 'var(--warning)' : 'var(--danger)';
-    return `<div class="match-score" style="color:${color}">${s}/100</div><h4>匹配度评分</h4>`;
+  var h = text;
+  // Match score
+  h = h.replace(/###\s*匹配度评分\s*\n(\d+)/, function(_, score) {
+    var s = parseInt(score);
+    var color = s >= 70 ? 'var(--accent)' : s >= 40 ? 'var(--warning)' : 'var(--danger)';
+    return '<div class="match-score" style="color:' + color + ';font-size:38px;font-weight:800;margin:12px 0">' + s + '/100</div><h4 style="margin:4px 0 16px;color:var(--muted)">匹配度评分</h4>';
   });
-  html = html.replace(/###\s*(.+)/g, '<h4>$1</h4>');
-  html = html.replace(/\n- (.+)/g, '\n• $1');
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*/g, '');
-  html = html.replace(/\n/g, '<br>');
-  return html;
+  // Major section headers (lines starting with **Title**)
+  h = h.replace(/^\*\*(.+?)\*\*\s*$/gm, '<div class="resume-section-header"><strong>$1</strong></div>');
+  // Bold text
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text)">$1</strong>');
+  // Remove remaining single *
+  h = h.replace(/\*/g, '');
+  // Sub-headers (###)
+  h = h.replace(/^### (.+)$/gm, '<h4 style="margin:18px 0 8px;font-size:15px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px">$1</h4>');
+  // Bullet items
+  h = h.replace(/^[\-•]\s(.+)$/gm, '<div style="margin:3px 0 3px 12px;line-height:1.8">• $1</div>');
+  // Separator lines (---)
+  h = h.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">');
+  // Double newlines = new paragraph
+  h = h.replace(/\n\n/g, '<br><br>');
+  // Single newlines
+  h = h.replace(/\n/g, '<br>');
+  // Cleanup empty divs
+  h = h.replace(/<div[^>]*>•\s*<\/div>/g, '');
+  return h;
 }
 
 // ============ Save Application ============
